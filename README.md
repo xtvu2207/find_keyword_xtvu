@@ -1,9 +1,3 @@
-Bien sûr ! Je vais vous aider à créer les fichiers nécessaires pour votre projet. Voici comment vous pouvez structurer chaque fichier, y compris `README.md` et `LICENSE`.
-
-### **1. Fichier `README.md`**
-
-Ce fichier sert à documenter votre projet, expliquer son utilisation, et fournir des informations utiles pour les utilisateurs. Voici un exemple de contenu pour `README.md` :
-
 ```markdown
 # find_keyword_xtvu
 
