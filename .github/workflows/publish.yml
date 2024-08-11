@@ -47,22 +47,22 @@ jobs:
       uses: actions/download-artifact@v3
       with:
         name: wheels-macos-latest
-        path: ./dist/macos
+        path: ./dist
 
     - name: Download Windows wheels
       uses: actions/download-artifact@v3
       with:
         name: wheels-windows-latest
-        path: ./dist/windows
+        path: ./dist
 
     - name: Download Ubuntu wheels
       uses: actions/download-artifact@v3
       with:
         name: wheels-ubuntu-latest
-        path: ./dist/ubuntu
+        path: ./dist
 
     - name: Upload to PyPI
       uses: pypa/gh-action-pypi-publish@v1.4.2
       with:
         password: ${{ secrets.PYPI_API_TOKEN_FIND_KEYWORD }}
-        packages_dir: ./dist
+        packages_dir: ./dist/*.whl
