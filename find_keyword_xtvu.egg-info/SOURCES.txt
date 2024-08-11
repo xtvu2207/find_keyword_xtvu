@@ -1,0 +1,13 @@
+LICENSE.txt
+MANIFEST.in
+README.md
+pyproject.toml
+setup.py
+find_keyword_xtvu/__init__.py
+find_keyword_xtvu/core.py
+find_keyword_xtvu.egg-info/PKG-INFO
+find_keyword_xtvu.egg-info/SOURCES.txt
+find_keyword_xtvu.egg-info/dependency_links.txt
+find_keyword_xtvu.egg-info/not-zip-safe
+find_keyword_xtvu.egg-info/requires.txt
+find_keyword_xtvu.egg-info/top_level.txt

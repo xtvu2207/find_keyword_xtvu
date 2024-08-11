@@ -1,0 +1,8 @@
+pdfplumber
+pytesseract
+pandas
+Pillow
+spacy
+openpyxl
+pdf2image
+reportlab
