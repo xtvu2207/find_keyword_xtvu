@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: find_keyword_xtvu
-Version: 1.0
+Version: 4.0
 Summary: A package to find keywords in .pdf, .docx, .odt, and .rtf files
 Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
