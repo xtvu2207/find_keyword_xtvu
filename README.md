@@ -1,6 +1,3 @@
-```markdown
-# find_keyword_xtvu
-
 `find_keyword_xtvu` est un package Python permettant de rechercher des mots-clés dans des fichiers PDF, DOCX, ODT et RTF, et d'extraire les phrases contenant ces mots-clés.
 
 ## Installation

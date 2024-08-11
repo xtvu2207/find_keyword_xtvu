@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: find_keyword_xtvu
-Version: 4.0
+Version: 2.0
 Summary: A package to find keywords in .pdf, .docx, .odt, and .rtf files
 Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
@@ -21,9 +21,6 @@ Requires-Dist: spacy
 Requires-Dist: openpyxl
 Requires-Dist: pdf2image
 Requires-Dist: reportlab
-
-```markdown
-# find_keyword_xtvu
 
 `find_keyword_xtvu` est un package Python permettant de rechercher des mots-clés dans des fichiers PDF, DOCX, ODT et RTF, et d'extraire les phrases contenant ces mots-clés.
 
