@@ -35,7 +35,7 @@ jobs:
     - name: Upload wheels to artifact
       uses: actions/upload-artifact@v3
       with:
-        name: wheels-${{ matrix.os }}
+        name: wheels-${{ matrix.os }}  # Upload with specific OS name
         path: dist/*.whl
 
   publish:
@@ -45,10 +45,22 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Download all wheels
+    - name: Download macOS wheels
       uses: actions/download-artifact@v3
       with:
-        name: wheels-${{ matrix.os }}
+        name: wheels-macos-latest
+        path: ./dist
+
+    - name: Download Windows wheels
+      uses: actions/download-artifact@v3
+      with:
+        name: wheels-windows-latest
+        path: ./dist
+
+    - name: Download Ubuntu wheels
+      uses: actions/download-artifact@v3
+      with:
+        name: wheels-ubuntu-latest
         path: ./dist
 
     - name: Upload to PyPI
