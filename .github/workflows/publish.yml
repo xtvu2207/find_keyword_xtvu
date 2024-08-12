@@ -35,8 +35,8 @@ jobs:
     - name: Upload wheels to artifact
       uses: actions/upload-artifact@v3
       with:
-        name: wheels-${{ matrix.os }}  # Upload with specific OS name
-        path: dist/*.whl
+        name: wheels-${{ matrix.os }}
+        path: dist/*.whl  # Upload only .whl files
 
   publish:
     needs: build
@@ -45,26 +45,18 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Download macOS wheels
+    - name: Download all wheels
       uses: actions/download-artifact@v3
       with:
-        name: wheels-macos-latest
+        name: wheels-${{ matrix.os }}
         path: ./dist
 
-    - name: Download Windows wheels
-      uses: actions/download-artifact@v3
-      with:
-        name: wheels-windows-latest
-        path: ./dist
-
-    - name: Download Ubuntu wheels
-      uses: actions/download-artifact@v3
-      with:
-        name: wheels-ubuntu-latest
-        path: ./dist
+    - name: Ensure only .whl files
+      run: |
+        find ./dist -type f ! -name '*.whl' -delete  # Delete all non-.whl files
 
     - name: Upload to PyPI
       uses: pypa/gh-action-pypi-publish@v1.4.2
       with:
         password: ${{ secrets.PYPI_API_TOKEN_FIND_KEYWORD }}
-        packages_dir: ./dist
+        packages_dir: ./dist  # Only .whl files will be in this directory
