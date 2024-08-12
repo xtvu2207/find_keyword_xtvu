@@ -28,7 +28,7 @@ The directory organization containing the .py code and documents can be structur
 ## Usage
 
 1. **Place the files in the input directory**:
-   - Place the PDF, DOCX, ODT, or RTF files you want to analyze into the subfolders within the fichiers_entree directory. By default, you can organize them in a single subfolder (e.g., files1) or in multiple subfolders (files2, files3, etc.), depending on your needs.
+   - Place the PDF, DOCX, ODT, or RTF files you want to analyze into the subfolders within the `fichiers_entree` directory. By default, you can organize them in a single subfolder (e.g., files1) or in multiple subfolders (files2, files3, etc.), depending on your needs.
    
 2. **Define the keywords**:
    - Open the `script_principal.py` script and modify the `KEYWORDS` list to include the keywords you want to search for in the files.
