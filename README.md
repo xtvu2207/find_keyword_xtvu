@@ -15,7 +15,7 @@ The directory organization containing the .py code and documents can be structur
 ```
 /Parent Folder
 │
-├── .py                     # The main Python script
+├── script_principal.py     # The main Python script
 │
 ├── fichiers_entre          # Folder containing subfolders of PDF files
 │   ├── files1              # Subfolder containing input .pdf, .docx, .otd, and .rtf files
@@ -34,9 +34,9 @@ The directory organization containing the .py code and documents can be structur
    - Open the `script_principal.py` script and modify the `KEYWORDS` list to include the keywords you want to search for in the files.
    
 3. **Run the script**:
-   - Run the `.py` script in an IDE like Visual Studio Code.
+   - Run the `script_principal.py` script in an IDE like Visual Studio Code.
 
-The `.py` file uses the `find_keyword_xtvu` package and can be organized as follows:
+The `script_principal.py` file uses the `find_keyword_xtvu` package and can be organized as follows:
 
 ```python
 from find_keyword_xtvu import find_keyword_xtvu
@@ -56,7 +56,7 @@ find_keyword_xtvu(
 )
 ```
 
-If you are on Windows, the .py file can be organized as follows to avoid multicore-related errors:
+If you are on Windows, the `script_principal.py` file can be organized as follows to avoid multicore-related errors:
 ```python
 from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
@@ -116,7 +116,7 @@ L'organisation du dossier contenant le code .py et les documents peut être stru
 ```
 /Dossier parent
 │
-├── .py                     # Le script Python principal
+├── script_principal.py     # Le script Python principal
 │
 ├── fichiers_entre          # Dossier contenant les sous-dossiers de fichiers PDF
 │   ├── files1              # Sous-dossier contenant les fichiers .pdf, .docx, .otd et .rtf d'entrée
@@ -135,9 +135,9 @@ L'organisation du dossier contenant le code .py et les documents peut être stru
    - Ouvrez le script `script_principal.py` et modifiez la liste `KEYWORDS` pour inclure les mots-clés que vous souhaitez rechercher dans les fichiers.
    
 3. **Exécutez le script** :
-   - Exécutez le script `.py` dans un IDE comme Visual Studio Code.
+   - Exécutez le script `script_principal.py`dans un IDE comme Visual Studio Code.
 
-Le fichier `.py` utilise le package `find_keyword_xtvu` et peut être organisé comme suit :
+Le fichier `script_principal.py` utilise le package `find_keyword_xtvu` et peut être organisé comme suit :
 
 ```python
 from find_keyword_xtvu import find_keyword_xtvu
