@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: find_keyword_xtvu
-Version: 5.2.4
+Version: 5.2.5
 Summary: A package to find keywords in .pdf, .docx, .odt, and .rtf files
 Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
@@ -100,24 +100,31 @@ if __name__ == "__main__":
     )
 ```
 
-### Arguments
+## Arguments
 
-- `threads_rest`: Number of threads to reserve for other tasks (default: `1`).
-- `nb_phrases_avant`: Number of sentences to include before the keyword (default: `10`).
-- `nb_phrases_apres`: Number of sentences to include after the keyword (default: `10`).
-- `keywords`: List of keywords to search for (default: `["recycling", "composting"]`).
-- `taille`: Maximum size of files to process in megabytes (default: `20` MB).
-- `timeout`: Maximum time to process a page in seconds (default: `200`).
-- `result_keyword_table_name`: Name of the table for keyword results.
-- `freque_document_keyword_table_name`: Name of the table for document keyword frequency.
-- `tesseract_cmd`: Path to the Tesseract executable (default: `"/usr/local/bin/tesseract"`).
-- `input_path`: Path to the folder containing the files to process.
-- `output_path`: Path to the folder where results will be saved.
+- `threads_rest`: Number of threads to reserve for other tasks (default value: `1`).
+- `nb_phrases_avant`: Number of sentences to include before the keyword (default value: `10`).
+- `nb_phrases_apres`: Number of sentences to include after the keyword (default value: `10`).
+- `keywords`: List of keywords to search for (default: `[""]`).
+- `taille`: Maximum file size to process in megabytes (default value: `20` MB).
+- `timeout`: Maximum time for processing a page in seconds (default value: `200`).
+- `result_keyword_table_name`: Name of the table for keyword results. If this field is empty, a default name for this table will be `res`.
+- `freque_document_keyword_table_name`: Name of the table for the results of the contingency tables of keyword frequency in each file folder. If this field is empty, the default name for this table will be `freque_document_keyword`.
+- `tesseract_cmd`: Path to the Tesseract executable (default value: `"/usr/local/bin/tesseract"`).
+- `input_path`: Path to the folder containing the files to be processed.
+- `output_path`: Path to the folder where the results will be saved.
+
+## Outputs
+
+The `find_keyword_xtvu` function will generate the following three Excel workbooks (.xlsx):
+1. A file containing the results of the keywords found in the documents, with a name that can be defined by the `result_keyword_table_name` argument in the `find_keyword_xtvu` function.
+2. A file containing the contingency tables of keyword frequency in the documents, with a name that can be defined by the `freque_document_keyword_table_name` argument in the `find_keyword_xtvu` function. Each contingency table shows how many times each keyword was found in each document within a specific folder. These tables are saved in different sheets within a single Excel workbook, with each sheet representing a folder.
+3. A file listing problematic files, named `heavy_or_slow_df.xlsx`.
 
 
 ## Contribution
 
-Contributions are welcome! If you want to improve this project or have any questions, feel free to contact me at vuxuantung09134@gmail.com.
+Contributions are welcome! If you would like to improve this project or if you have any questions, feel free to contact me at vuxuantung09134@gmail.com (in French, English, or Vietnamese).
 
 ## License
 
@@ -182,7 +189,7 @@ find_keyword_xtvu(
 )
 ```
 
-Si vous êtes sur Windows, le fichier .py peut être organisé comme suit pour éviter les erreurs liées au multicore :
+Si vous êtes sur Windows, le fichier `script_principal.py` peut être organisé comme suit pour éviter les erreurs liées au multicore :
 ```python
 from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
@@ -201,24 +208,35 @@ if __name__ == "__main__":
     )
 ```
 
-### Arguments
+## Arguments
 
 - `threads_rest` : Nombre de threads à réserver pour d'autres tâches (valeur par défaut : `1`).
 - `nb_phrases_avant` : Nombre de phrases à inclure avant le mot-clé (valeur par défaut : `10`).
 - `nb_phrases_apres` : Nombre de phrases à inclure après le mot-clé (valeur par défaut : `10`).
-- `keywords` : Liste des mots-clés à rechercher (par défaut : `["recycling", "composting"]`).
+- `keywords` : Liste des mots-clés à rechercher (par défaut : `[""]`).
 - `taille` : Taille maximale des fichiers à traiter en mégaoctets (valeur par défaut : `20` MB).
 - `timeout` : Durée maximale pour le traitement d'une page en secondes (valeur par défaut : `200`).
-- `result_keyword_table_name` : Nom de la table pour les résultats des mots-clés.
-- `freque_document_keyword_table_name` : Nom de la table pour la fréquence des mots-clés dans les documents.
+- `result_keyword_table_name` : Nom de la table pour les résultats des mots-clés. Si ce champ est vide, un nom par défaut pour cette table sera `res`.
+- `freque_document_keyword_table_name` : Nom de la table pour les résultats des tables de contingence de la fréquence des mots-clés dans chaque dossier de fichiers. Si ce champ est vide, le nom par défaut pour cette table sera `freque_document_keyword`.
 - `tesseract_cmd` : Chemin vers l'exécutable Tesseract (valeur par défaut : `"/usr/local/bin/tesseract"`).
 - `input_path` : Chemin vers le dossier contenant les fichiers à traiter.
 - `output_path` : Chemin vers le dossier où les résultats seront enregistrés.
 
+## Sorties
+
+La fonction `find_keyword_xtvu` va générer trois classeurs Excel (.xlsx) suivants :
+1. Un fichier contenant les résultats des mots-clés trouvés dans les documents avec un nom pouvant être défini par l'argument `result_keyword_table_name` dans la fonction `find_keyword_xtvu`.
+2. Un fichier contenant les tables de contingence de la fréquence des mots-clés dans les documents avec un nom pouvant être défini par l'argument `freque_document_keyword_table_name` dans la fonction `find_keyword_xtvu`. Chaque table de contingence montre combien de fois chaque mot-clé a été trouvé dans chaque document au sein d'un dossier spécifique. Ces tables sont enregistrées sous différentes feuilles dans un seul classeur Excel, avec chaque feuille représentant un dossier.
+3. Un fichier répertoriant les fichiers problématiques, nommé `heavy_or_slow_df.xlsx`.
+
+
+
+
+
 
 ## Contribution
 
-Les contributions sont les bienvenues ! Si vous souhaitez améliorer ce projet ou avez des questions, n'hésitez pas à me contacter à l'adresse vuxuantung09134@gmail.com.
+Les contributions sont les bienvenues ! Si vous souhaitez améliorer ce projet ou si vous avez des questions, n'hésitez pas à me contacter à l'adresse vuxuantung09134@gmail.com (en français, anglais ou vietnamien).
 
 ## Licence
 
