@@ -6,7 +6,7 @@
 You can install this package via pip:
 
 ```bash
-pip install find_keyword_xtvu
+pip install find-keyword-xtvu==<latest_version_on_PyPi>
 ```
 
 ## Directory Structure
@@ -114,7 +114,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 Vous pouvez installer ce package via pip :
 
 ```bash
-pip install find_keyword_xtvu
+pip install find-keyword-xtvu==<dernière_version_sur_PyPi>
 ```
 
 ## Structure du Répertoire

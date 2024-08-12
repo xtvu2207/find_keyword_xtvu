@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: find_keyword_xtvu
-Version: 5.2.5
+Version: 5.2.6
 Summary: A package to find keywords in .pdf, .docx, .odt, and .rtf files
 Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
@@ -31,7 +31,7 @@ Requires-Dist: python-docx
 You can install this package via pip:
 
 ```bash
-pip install find_keyword_xtvu
+pip install find-keyword-xtvu==<latest_version_on_PyPi>
 ```
 
 ## Directory Structure
@@ -139,7 +139,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 Vous pouvez installer ce package via pip :
 
 ```bash
-pip install find_keyword_xtvu
+pip install find-keyword-xtvu==<dernière_version_sur_PyPi>
 ```
 
 ## Structure du Répertoire
