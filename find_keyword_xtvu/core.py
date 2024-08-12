@@ -220,11 +220,11 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
 
 def nettoyer_donnees(dataframe):
     def clean_cell(cell):
-        if isinstance(cell, str):  
+        if isinstance(cell, str):
             cleaned = cell.replace('=', '').replace('+', '').replace('-', '').replace('@', '').replace('{', '').replace('}', '')
-            cleaned = re.sub(r'[^\x00-\x7F]+', '', cleaned) 
+            cleaned = re.sub(r'[^\x00-\x7FÀ-ÿ]+', '', cleaned)
             return cleaned.strip()
-        return cell 
+        return cell
 
     for col in dataframe.columns:
         if dataframe[col].dtype == 'object':
@@ -246,8 +246,11 @@ def generer_tables_contingence(data):
         tables_contingence[id_dossier] = table
     return tables_contingence
 
-def enregistrer_tables_contingence(tables_contingence, output_path):
-    excel_path = os.path.join(output_path, "tables_conteingences.xlsx")
+def enregistrer_tables_contingence(tables_contingence, output_path,freque_document_keyword_table_name):
+    if not freque_document_keyword_table_name:
+        logging.warning("Aucun nom de table de contingence document par keyword fourni, le nom de cette table a été défini par défaut à 'freque_document_keyword'")
+        freque_document_keyword_table_name = "freque_document_keyword"
+    excel_path = os.path.join(output_path, f"{freque_document_keyword_table_name}.xlsx")
     with pd.ExcelWriter(excel_path) as writer:
         for id_dossier, table in tables_contingence.items():
             table.to_excel(writer, sheet_name=id_dossier[:31])
@@ -260,6 +263,8 @@ def find_keyword_xtvu(
     keywords=None,
     taille=20,
     timeout=200,
+    result_keyword_table_name = "",
+    freque_document_keyword_table_name="",
     tesseract_cmd="/usr/local/bin/tesseract",
     input_path="/path/to/input",
     output_path="/path/to/output"
@@ -336,7 +341,7 @@ def find_keyword_xtvu(
 
     if data:
         tables_contingence = generer_tables_contingence(data)
-        enregistrer_tables_contingence(tables_contingence, resultat_path)
+        enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
     else:
         logging.error("Il n'y a aucun document contenant les mots-clés ! Veuillez vérifier vos mots-clés =)")
         sys.exit(1)
@@ -346,8 +351,12 @@ def find_keyword_xtvu(
     df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['Dossier_PDF', 'Document_PDF', 'Issue'])
 
     df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
+    
+    if not result_keyword_table_name:
+        logging.warning("Aucun nom de table de résultat fourni, le nom de cette table a été défini par défaut à 'res'")
+        result_keyword_table_name = "res"
 
-    df_path = os.path.join(resultat_path, "df.xlsx")
+    df_path = os.path.join(resultat_path, f"{result_keyword_table_name}.xlsx")
     heavy_or_slow_df_path = os.path.join(resultat_path, "heavy_or_slow_df.xlsx")
     df.to_excel(df_path, index=False)
     df_heavy_or_slow.to_excel(heavy_or_slow_df_path, index=False)
