@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: find_keyword_xtvu
-Version: 5.2.6
+Version: 5.2.7
 Summary: A package to find keywords in .pdf, .docx, .odt, and .rtf files
 Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
@@ -53,7 +53,7 @@ The directory organization containing the .py code and documents can be structur
 ## Usage
 
 1. **Place the files in the input directory**:
-   - Place the PDF, DOCX, ODT, or RTF files you want to analyze in the `fichiers_entree` folder. By default, you can organize them in a single subfolder (like `files1`) or in multiple subfolders (`files2`, `files3`, etc.) according to your needs.
+   - Place the PDF, DOCX, ODT, or RTF files you want to analyze into the subfolders within the fichiers_entree directory. By default, you can organize them in a single subfolder (e.g., files1) or in multiple subfolders (files2, files3, etc.), depending on your needs.
    
 2. **Define the keywords**:
    - Open the `script_principal.py` script and modify the `KEYWORDS` list to include the keywords you want to search for in the files.
@@ -76,8 +76,8 @@ find_keyword_xtvu(
     result_keyword_table_name="",
     freque_document_keyword_table_name="",
     tesseract_cmd="/usr/local/bin/tesseract",
-    input_path="/path/to/input",
-    output_path="/path/to/output"
+    input_path="/path/to/fichiers_entre",
+    output_path="/path/to/resultats"
 )
 ```
 
@@ -95,8 +95,8 @@ if __name__ == "__main__":
         result_keyword_table_name="",
         freque_document_keyword_table_name="",
         tesseract_cmd="/usr/local/bin/tesseract",
-        input_path="/path/to/input",
-        output_path="/path/to/output"
+        input_path="/path/to/fichiers_entre",
+        output_path="/path/to/resultats"
     )
 ```
 
@@ -161,8 +161,8 @@ L'organisation du dossier contenant le code .py et les documents peut être stru
 ## Utilisation
 
 1. **Placez les fichiers dans le répertoire d'entrée** :
-   - Mettez les fichiers PDF, DOCX, ODT, ou RTF que vous souhaitez analyser dans le dossier `fichiers_entree`. Par défaut, vous pouvez les organiser dans un seul sous-dossier (comme `files1`) ou dans plusieurs sous-dossiers (`files2`, `files3`, etc.) selon vos besoins.
-   
+    - Mettez les fichiers PDF, DOCX, ODT, ou RTF que vous souhaitez analyser dans les sous-dossiers du dossier `fichiers_entree`. Par défaut, vous pouvez les organiser dans un seul sous-dossier (par exemple, `files1`) ou dans plusieurs sous-dossiers (`files2`, `files3`, etc.), selon vos besoins.
+    
 2. **Définissez les mots-clés** :
    - Ouvrez le script `script_principal.py` et modifiez la liste `KEYWORDS` pour inclure les mots-clés que vous souhaitez rechercher dans les fichiers.
    
@@ -184,8 +184,8 @@ find_keyword_xtvu(
     result_keyword_table_name="",
     freque_document_keyword_table_name="",
     tesseract_cmd="/usr/local/bin/tesseract",
-    input_path="/path/to/input",
-    output_path="/path/to/output"
+    input_path="/path/to/fichiers_entre",
+    output_path="/path/to/resultats"
 )
 ```
 
@@ -203,8 +203,8 @@ if __name__ == "__main__":
         result_keyword_table_name="",
         freque_document_keyword_table_name="",
         tesseract_cmd="/usr/local/bin/tesseract",
-        input_path="/path/to/input",
-        output_path="/path/to/output"
+        input_path="/path/to/fichiers_entre",
+        output_path="/path/to/resultats"
     )
 ```
 
