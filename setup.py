@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="find_keyword_xtvu",
-    version="5.2",
+    version="5.2.1",
     author="Xuan Tung VU",
     description="A package to find keywords in .pdf, .docx, .odt, and .rtf files",
     long_description=open("README.md").read(),
@@ -16,7 +16,7 @@ setup(
         "Topic :: Software Development :: Libraries :: Python Modules",
     ],
     python_requires='>=3.10',
-    packages=find_packages(),  # Trouve automatiquement tous les sous-modules dans find_keyword_xtvu
+    packages=find_packages(), 
     install_requires=[
         'pdfplumber',
         'pytesseract',
@@ -25,8 +25,10 @@ setup(
         'spacy',
         'openpyxl',
         'pdf2image',
-        'reportlab'
+        'reportlab',
+        'pypandoc', 
+        'python-docx'
     ],
-    include_package_data=True,  # Inclure automatiquement les fichiers spécifiés dans MANIFEST.in
-    zip_safe=False,  # Assure une installation non zip
+    include_package_data=True, 
+    zip_safe=False, 
 )

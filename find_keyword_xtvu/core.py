@@ -37,6 +37,7 @@ pdf2image = install_and_import('pdf2image')
 pandoc = install_and_import('pandoc')
 pypandoc = install_and_import('pypandoc')
 reportlab = install_and_import('reportlab')
+docx = install_and_import("python-docx")
 
 from docx import Document
 from pdf2image import convert_from_bytes

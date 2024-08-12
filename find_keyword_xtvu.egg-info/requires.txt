@@ -6,3 +6,5 @@ spacy
 openpyxl
 pdf2image
 reportlab
+pypandoc
+python-docx
