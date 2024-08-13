@@ -50,7 +50,7 @@ Image = PIL.Image
 
 def init_nlp(prefixe_langue):
     if prefixe_langue == "multi":
-        model_name = "xx_ent_wiki_sm"
+        model_name = "xx_sent_ud_sm"
         try:
             nlp = spacy.load(model_name)
             return nlp
