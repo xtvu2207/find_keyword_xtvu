@@ -82,7 +82,7 @@ if __name__ == "__main__":
 ```
 
 ## Arguments
-- `prefixe_langue`: Language prefix to specify the language model to use (default value: `'en'`). To know the supported languages and their prefixes, see the [SpaCy documentation](https://spacy.io/usage/models). If you provide an unsupported prefix, or if you want to use the multilingual model, specify the `multi` argument. In either case, the multilingual model `xx_ent_wiki_sm` will be used. Learn more about this model [here](https://spacy.io/models/xx).
+- `prefixe_langue`: Language prefix to specify the language model to use (default value: `'fr'`). To know the supported languages and their prefixes, see the [SpaCy documentation](https://spacy.io/usage/models). If you provide an unsupported prefix, or if you want to use the multilingual model, specify the `multi` argument. In either case, the multilingual model `xx_ent_wiki_sm` will be used. Learn more about this model [here](https://spacy.io/models/xx).
 - `threads_rest`: Number of threads to reserve for other tasks (default value: `1`).
 - `nb_phrases_avant`: Number of sentences to include before the keyword (default value: `10`).
 - `nb_phrases_apres`: Number of sentences to include after the keyword (default value: `10`).
@@ -192,7 +192,7 @@ if __name__ == "__main__":
 ```
 
 ## Arguments
-- `prefixe_langue` : Préfixe de langue pour spécifier le modèle linguistique à utiliser (valeur par défaut : `'en'`). Pour connaître les langues supportées et leurs préfixes, consultez la [documentation SpaCy](https://spacy.io/usage/models). Si vous fournissez un préfixe non supporté, ou si vous souhaitez utiliser le modèle multilingue, spécifiez l'argument `multi`. Dans les deux cas, le modèle multilingue `xx_ent_wiki_sm` sera utilisé. En savoir plus sur ce modèle [ici](https://spacy.io/models/xx).
+- `prefixe_langue` : Préfixe de langue pour spécifier le modèle linguistique à utiliser (valeur par défaut : `'fr'`). Pour connaître les langues supportées et leurs préfixes, consultez la [documentation SpaCy](https://spacy.io/usage/models). Si vous fournissez un préfixe non supporté, ou si vous souhaitez utiliser le modèle multilingue, spécifiez l'argument `multi`. Dans les deux cas, le modèle multilingue `xx_ent_wiki_sm` sera utilisé. En savoir plus sur ce modèle [ici](https://spacy.io/models/xx).
 - `threads_rest` : Nombre de threads à réserver pour d'autres tâches (valeur par défaut : `1`).
 - `nb_phrases_avant` : Nombre de phrases à inclure avant le mot-clé (valeur par défaut : `10`).
 - `nb_phrases_apres` : Nombre de phrases à inclure après le mot-clé (valeur par défaut : `10`).
