@@ -6,7 +6,8 @@ Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
 Classifier: Operating System :: OS Independent
 Classifier: License :: OSI Approved :: MIT License
-Classifier: Development Status :: 5 - Production/StableIntended Audience :: Developers
+Classifier: Development Status :: 5 - Production/Stable
+Classifier: Intended Audience :: Developers
 Classifier: Topic :: Software Development :: Libraries :: Python Modules
 Requires-Python: >=3.10
 Description-Content-Type: text/markdown
@@ -74,7 +75,7 @@ find_keyword_xtvu(
     threads_rest=1,
     nb_phrases_avant=10,
     nb_phrases_apres=10,
-    keywords=["recycling", "composting"],
+    keywords=[""],
     taille=20,
     timeout=200,
     result_keyword_table_name="",
@@ -94,7 +95,7 @@ if __name__ == "__main__":
         threads_rest=1,
         nb_phrases_avant=10,
         nb_phrases_apres=10,
-        keywords=["recycling", "composting"],
+        keywords=[""],
         taille=20,
         timeout=200,
         result_keyword_table_name="",
@@ -184,7 +185,7 @@ find_keyword_xtvu(
     threads_rest=1,
     nb_phrases_avant=10,
     nb_phrases_apres=10,
-    keywords=["recycling", "composting"],
+    keywords=[""],
     taille=20,
     timeout=200,
     result_keyword_table_name="",
@@ -204,7 +205,7 @@ if __name__ == "__main__":
         threads_rest=1,
         nb_phrases_avant=10,
         nb_phrases_apres=10,
-        keywords=["recycling", "composting"],
+        keywords=[""],
         taille=20,
         timeout=200,
         result_keyword_table_name="",
