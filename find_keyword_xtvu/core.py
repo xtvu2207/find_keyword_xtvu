@@ -47,13 +47,48 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 Event = threading.Event
 Image = PIL.Image
-def init_nlp():
+
+def init_nlp(prefixe_langue):
+    if prefixe_langue == "en":
+        variantes_modele = [
+            f"{prefixe_langue}_core_web_lg",
+            f"{prefixe_langue}_core_web_md",
+            f"{prefixe_langue}_core_web_sm"
+        ]
+    else:
+        variantes_modele = [
+            f"{prefixe_langue}_core_news_lg",
+            f"{prefixe_langue}_core_news_md",
+            f"{prefixe_langue}_core_news_sm"
+        ]
+
+    for nom_modele in variantes_modele:
+        try:
+            nlp = spacy.load(nom_modele)
+            return nlp
+        except OSError:
+            # logging.info(f"Le modèle {nom_modele} n'est pas installé. Tentative d'installation...")
+            try:
+                subprocess.run([sys.executable, "-m", "spacy", "download", nom_modele], check=True)
+                nlp = spacy.load(nom_modele)
+                return nlp
+            except Exception as e:
+                # logging.warning(f"Échec de l'installation du modèle {nom_modele}: {str(e)}. Tentative d'utilisation du modèle suivant.")
+                continue
+    fallback_model = "xx_sent_ud_sm"
     try:
-        nlp = spacy.load("fr_core_news_lg")
+        nlp = spacy.load(fallback_model)
+        return nlp
     except OSError:
-        subprocess.check_call([sys.executable, "-m", "spacy", "download", "fr_core_news_lg"])
-        nlp = spacy.load("fr_core_news_lg")
-    return nlp
+        # logging.info(f"Le modèle {fallback_model} n'est pas installé. Tentative d'installation...")
+        try:
+            subprocess.run([sys.executable, "-m", "spacy", "download", fallback_model], check=True)
+            nlp = spacy.load(fallback_model)
+            return nlp
+        except Exception as e:
+            # logging.error(f"Échec de l'installation du modèle {fallback_model}. Aucun modèle disponible.")
+            raise RuntimeError(f"Impossible de charger un modèle de langue pour '{prefixe_langue}' et le modèle de secours '{fallback_model}'.")
+
 
 def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp):
     doc = nlp(texte)
@@ -167,11 +202,9 @@ def convertir_docx_en_pdf_en_memoire(docx_path):
         logging.error(f"Erreur lors de la conversion en PDF en mémoire: {str(e)}")
         return None
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres,nlp):
     chemin_pdf, id_dossier, fichier = args
-    
-    # Initialisation de spacy, pytesseract, et pypandoc dans chaque processus enfant
-    nlp = init_nlp()
+
     pytesseract = install_and_import('pytesseract')
     pypandoc = install_and_import('pypandoc')
 
@@ -218,12 +251,15 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     data.sort(key=lambda x: x['Num_Page'])
     return data, None
 
-def nettoyer_donnees(dataframe):
+def nettoyer_donnees(dataframe, nlp):
     def clean_cell(cell):
         if isinstance(cell, str):
-            cleaned = cell.replace('=', '').replace('+', '').replace('-', '').replace('@', '').replace('{', '').replace('}', '')
-            cleaned = re.sub(r'[^\x00-\x7FÀ-ÿ]+', '', cleaned)
-            return cleaned.strip()
+            doc = nlp(cell)
+            cleaned_tokens = []
+            for token in doc:
+                if token.is_alpha or token.is_digit or token.ent_type_:
+                    cleaned_tokens.append(token.text)
+            return " ".join(cleaned_tokens).strip()
         return cell
 
     for col in dataframe.columns:
@@ -231,6 +267,7 @@ def nettoyer_donnees(dataframe):
             dataframe.loc[:, col] = dataframe[col].apply(clean_cell)
 
     return dataframe
+
 
 def generer_tables_contingence(data):
     df_data = pd.DataFrame(data)
@@ -257,6 +294,7 @@ def enregistrer_tables_contingence(tables_contingence, output_path,freque_docume
     logging.info(f"Les tables de contingence ont été enregistrées dans {excel_path}")
 
 def find_keyword_xtvu(
+    prefixe_langue = 'fr',
     threads_rest=1,
     nb_phrases_avant=10,
     nb_phrases_apres=10,
@@ -283,7 +321,7 @@ def find_keyword_xtvu(
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
     file_size_limit = taille * 1024 * 1024
 
-
+    nlp = init_nlp(prefixe_langue)
 
     # Exécution principale
     data = []
@@ -320,7 +358,7 @@ def find_keyword_xtvu(
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:
@@ -347,7 +385,7 @@ def find_keyword_xtvu(
         sys.exit(1)
 
     df = pd.DataFrame(data, columns=['Dossier_PDF', 'Document_PDF', 'Num_Page', 'Mots_Clés_Trouvés', 'Longueur_Phrase_Conteint_Mots_Clés', 'Info'])
-    df = nettoyer_donnees(df)
+    df = nettoyer_donnees(df, nlp)
     df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['Dossier_PDF', 'Document_PDF', 'Issue'])
 
     df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()

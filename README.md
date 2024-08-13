@@ -1,6 +1,12 @@
 # English version
 `find_keyword_xtvu` is a Python package that allows searching for keywords in PDF, DOCX, ODT, and RTF files and extracting the sentences containing these keywords.
 
+
+
+## What's New in Version 5.3
+**Multilingual Support**: This new version now supports multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
+
+
 ## Installation
 
 You can install this package via pip:
@@ -42,6 +48,7 @@ The `script_principal.py` file uses the `find_keyword_xtvu` package and can be o
 from find_keyword_xtvu import find_keyword_xtvu
 
 find_keyword_xtvu(
+    prefixe_langue = 'fr',
     threads_rest=1,
     nb_phrases_avant=10,
     nb_phrases_apres=10,
@@ -61,6 +68,7 @@ If you are on Windows, the `script_principal.py` file can be organized as follow
 from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
     find_keyword_xtvu(
+        prefixe_langue = 'fr',
         threads_rest=1,
         nb_phrases_avant=10,
         nb_phrases_apres=10,
@@ -76,7 +84,7 @@ if __name__ == "__main__":
 ```
 
 ## Arguments
-
+- `prefixe_langue`: Language prefix to specify the language model to use (default value: `'en'`). To know the supported languages and their prefixes, see the [SpaCy documentation](https://spacy.io/usage/models). If you provide an unsupported prefix, or if you want to use the multilingual model, specify the `multi` argument. In either case, the multilingual model `xx_ent_wiki_sm` will be used. Learn more about this model [here](https://spacy.io/models/xx).
 - `threads_rest`: Number of threads to reserve for other tasks (default value: `1`).
 - `nb_phrases_avant`: Number of sentences to include before the keyword (default value: `10`).
 - `nb_phrases_apres`: Number of sentences to include after the keyword (default value: `10`).
@@ -150,6 +158,7 @@ Le fichier `script_principal.py` utilise le package `find_keyword_xtvu` et peut 
 from find_keyword_xtvu import find_keyword_xtvu
 
 find_keyword_xtvu(
+    prefixe_langue = 'fr',
     threads_rest=1,
     nb_phrases_avant=10,
     nb_phrases_apres=10,
@@ -169,6 +178,7 @@ Si vous êtes sur Windows, le fichier `script_principal.py` peut être organisé
 from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
     find_keyword_xtvu(
+        prefixe_langue = 'fr',
         threads_rest=1,
         nb_phrases_avant=10,
         nb_phrases_apres=10,
@@ -184,7 +194,7 @@ if __name__ == "__main__":
 ```
 
 ## Arguments
-
+- `prefixe_langue` : Préfixe de langue pour spécifier le modèle linguistique à utiliser (valeur par défaut : `'en'`). Pour connaître les langues supportées et leurs préfixes, consultez la [documentation SpaCy](https://spacy.io/usage/models). Si vous fournissez un préfixe non supporté, ou si vous souhaitez utiliser le modèle multilingue, spécifiez l'argument `multi`. Dans les deux cas, le modèle multilingue `xx_ent_wiki_sm` sera utilisé. En savoir plus sur ce modèle [ici](https://spacy.io/models/xx).
 - `threads_rest` : Nombre de threads à réserver pour d'autres tâches (valeur par défaut : `1`).
 - `nb_phrases_avant` : Nombre de phrases à inclure avant le mot-clé (valeur par défaut : `10`).
 - `nb_phrases_apres` : Nombre de phrases à inclure après le mot-clé (valeur par défaut : `10`).
