@@ -49,7 +49,19 @@ Event = threading.Event
 Image = PIL.Image
 
 def init_nlp(prefixe_langue):
-    if prefixe_langue == "en":
+    if prefixe_langue == "multi":
+        model_name = "xx_ent_wiki_sm"
+        try:
+            nlp = spacy.load(model_name)
+            return nlp
+        except OSError:
+            try:
+                subprocess.run([sys.executable, "-m", "spacy", "download", model_name], check=True)
+                nlp = spacy.load(model_name)
+                return nlp
+            except Exception as e:
+                raise RuntimeError(f"Impossible de charger le modèle multilingue '{model_name}'.")
+    elif prefixe_langue == "en":
         variantes_modele = [
             f"{prefixe_langue}_core_web_lg",
             f"{prefixe_langue}_core_web_md",
@@ -67,28 +79,24 @@ def init_nlp(prefixe_langue):
             nlp = spacy.load(nom_modele)
             return nlp
         except OSError:
-            # logging.info(f"Le modèle {nom_modele} n'est pas installé. Tentative d'installation...")
             try:
                 subprocess.run([sys.executable, "-m", "spacy", "download", nom_modele], check=True)
                 nlp = spacy.load(nom_modele)
                 return nlp
             except Exception as e:
-                # logging.warning(f"Échec de l'installation du modèle {nom_modele}: {str(e)}. Tentative d'utilisation du modèle suivant.")
                 continue
+
     fallback_model = "xx_sent_ud_sm"
     try:
         nlp = spacy.load(fallback_model)
         return nlp
     except OSError:
-        # logging.info(f"Le modèle {fallback_model} n'est pas installé. Tentative d'installation...")
         try:
             subprocess.run([sys.executable, "-m", "spacy", "download", fallback_model], check=True)
             nlp = spacy.load(fallback_model)
             return nlp
         except Exception as e:
-            # logging.error(f"Échec de l'installation du modèle {fallback_model}. Aucun modèle disponible.")
             raise RuntimeError(f"Impossible de charger un modèle de langue pour '{prefixe_langue}' et le modèle de secours '{fallback_model}'.")
-
 
 def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp):
     doc = nlp(texte)

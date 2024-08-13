@@ -1,7 +1,5 @@
 # English version
-`find_keyword_xtvu` is a Python package that allows searching for keywords in PDF, DOCX, ODT, and RTF files and extracting the sentences containing these keywords.
-
-
+The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
 ## What's New in Version 5.3
 **Multilingual Support**: This new version now supports multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
