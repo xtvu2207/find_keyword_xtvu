@@ -8,3 +8,6 @@ pdf2image
 reportlab
 pypandoc
 python-docx
+requests
+packaging
+setuptools>=40.0.0

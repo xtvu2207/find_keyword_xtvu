@@ -1,7 +1,7 @@
 # English version
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
-## What's New in Version 5.5.1
+## What's New in Version 5.5.2
 **Multilingual Support**: This new version now supports multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
 
 
@@ -44,26 +44,6 @@ The `script_principal.py` file uses the `find_keyword_xtvu` package and can be o
 
 ```python
 from find_keyword_xtvu import find_keyword_xtvu
-
-find_keyword_xtvu(
-    prefixe_langue = 'fr',
-    threads_rest=1,
-    nb_phrases_avant=10,
-    nb_phrases_apres=10,
-    keywords=[""],
-    taille=20,
-    timeout=200,
-    result_keyword_table_name="",
-    freque_document_keyword_table_name="",
-    tesseract_cmd="/usr/local/bin/tesseract",
-    input_path="/path/to/fichiers_entre",
-    output_path="/path/to/resultats"
-)
-```
-
-If you are on Windows, the `script_principal.py` file can be organized as follows to avoid multicore-related errors:
-```python
-from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
     find_keyword_xtvu(
         prefixe_langue = 'fr',
@@ -80,6 +60,7 @@ if __name__ == "__main__":
         output_path="/path/to/resultats"
     )
 ```
+
 
 ## Arguments
 - `prefixe_langue`: Language prefix to specify the language model to use (default value: `'fr'`). To know the supported languages and their prefixes, see the [SpaCy documentation](https://spacy.io/usage/models). If you provide an unsupported prefix, or if you want to use the multilingual model, specify the `multi` argument. In either case, the multilingual model `xx_ent_wiki_sm` will be used. Learn more about this model [here](https://spacy.io/models/xx).
@@ -113,7 +94,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for detai
 
 # Version Française
 
-`find_keyword_xtvu` est un package Python permettant de rechercher des mots-clés dans des fichiers PDF, DOCX, ODT et RTF, et d'extraire les phrases contenant ces mots-clés.
+Le package Python `find_keyword_xtvu` facilite la recherche de mots-clés dans les fichiers **PDF, DOCX, ODT et RTF**, permettant d'extraire les phrases contenant ces mots-clés. Il offre également un support pour **plusieurs langues** et peut s'exécuter sur des **CPU multicœurs**.
 
 ## Installation
 
@@ -154,26 +135,6 @@ Le fichier `script_principal.py` utilise le package `find_keyword_xtvu` et peut 
 
 ```python
 from find_keyword_xtvu import find_keyword_xtvu
-
-find_keyword_xtvu(
-    prefixe_langue = 'fr',
-    threads_rest=1,
-    nb_phrases_avant=10,
-    nb_phrases_apres=10,
-    keywords=[""],
-    taille=20,
-    timeout=200,
-    result_keyword_table_name="",
-    freque_document_keyword_table_name="",
-    tesseract_cmd="/usr/local/bin/tesseract",
-    input_path="/path/to/fichiers_entre",
-    output_path="/path/to/resultats"
-)
-```
-
-Si vous êtes sur Windows, le fichier `script_principal.py` peut être organisé comme suit pour éviter les erreurs liées au multicore :
-```python
-from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
     find_keyword_xtvu(
         prefixe_langue = 'fr',
@@ -190,6 +151,7 @@ if __name__ == "__main__":
         output_path="/path/to/resultats"
     )
 ```
+
 
 ## Arguments
 - `prefixe_langue` : Préfixe de langue pour spécifier le modèle linguistique à utiliser (valeur par défaut : `'fr'`). Pour connaître les langues supportées et leurs préfixes, consultez la [documentation SpaCy](https://spacy.io/usage/models). Si vous fournissez un préfixe non supporté, ou si vous souhaitez utiliser le modèle multilingue, spécifiez l'argument `multi`. Dans les deux cas, le modèle multilingue `xx_ent_wiki_sm` sera utilisé. En savoir plus sur ce modèle [ici](https://spacy.io/models/xx).

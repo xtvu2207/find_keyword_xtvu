@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="find_keyword_xtvu",
-    version="5.5.1",
+    version="5.5.2",
     author="Xuan Tung VU",
     description="A package to find keywords in .pdf, .docx, .odt, and .rtf files, with support for multiple languages.",
     long_description=open("README.md").read(),
@@ -30,7 +30,10 @@ setup(
         'pdf2image',
         'reportlab',
         'pypandoc', 
-        'python-docx'
+        'python-docx',
+        'requests',          
+        'packaging',          
+        'setuptools>=40.0.0'
     ],
     include_package_data=True, 
     zip_safe=False, 
