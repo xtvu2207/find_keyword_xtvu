@@ -1,7 +1,7 @@
 # English version
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
-## What's New in Version 5.5.2
+## What's New in Version 5.5.3
 **Multilingual Support**: This new version now supports multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
 
 
@@ -85,6 +85,7 @@ The `find_keyword_xtvu` function will generate the following three Excel workboo
 
 
 ## Contribution
+As the author of this library, I would like to thank Madame Sylvie HUET, researcher at LISC, INRAE, Centre Clermont-Auvergne-Rhône-Alpes, France, for her valuable contributions.
 
 Contributions are welcome! If you would like to improve this project or if you have any questions, feel free to contact me at vuxuantung09134@gmail.com (in French, English, or Vietnamese).
 
@@ -180,6 +181,8 @@ La fonction `find_keyword_xtvu` va générer trois classeurs Excel (.xlsx) suiva
 
 
 ## Contribution
+
+En tant qu'auteur de cette bibliothèque, je tiens à remercier Madame Sylvie HUET, chercheuse au LISC, INRAE, Centre Clermont-Auvergne-Rhône-Alpes, France, pour ses précieuses contributions.
 
 Les contributions sont les bienvenues ! Si vous souhaitez améliorer ce projet ou si vous avez des questions, n'hésitez pas à me contacter à l'adresse vuxuantung09134@gmail.com (en français, anglais ou vietnamien).
 
