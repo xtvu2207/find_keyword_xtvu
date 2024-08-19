@@ -1,8 +1,12 @@
 # English version
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
-## What's New in Version 5.5.3
-**Multilingual Support**: This new version now supports multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
+## What's New in Version 5.5.4
+- **Bug fix**: Fixed an issue where some document names couldn't be read correctly.
+- **New argument `fusion_keyword_before_after`**: Ability to merge phrases to avoid redundancy in the results.
+- **Multilingual Support**: This new version now supports multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
+
+
 
 
 ## Installation
@@ -55,6 +59,7 @@ if __name__ == "__main__":
         timeout=200,
         result_keyword_table_name="",
         freque_document_keyword_table_name="",
+        fusion_keyword_before_after = False,
         tesseract_cmd="/usr/local/bin/tesseract",
         input_path="/path/to/fichiers_entre",
         output_path="/path/to/resultats"
@@ -72,6 +77,7 @@ if __name__ == "__main__":
 - `timeout`: Maximum time for processing a page in seconds (default value: `200`).
 - `result_keyword_table_name`: Name of the table for keyword results. If this field is empty, a default name for this table will be `res`.
 - `freque_document_keyword_table_name`: Name of the table for the results of the contingency tables of keyword frequency in each file folder. If this field is empty, the default name for this table will be `freque_document_keyword`.
+- `fusion_keyword_before_after`: This boolean parameter controls whether the function should avoid including redundant phrases when a keyword appears multiple times within close proximity in the text. When set to `True`, the function ensures that phrases surrounding a keyword are only extracted once, even if they overlap with the phrases surrounding another occurrence of the same keyword. This prevents the repetition of phrases in the final output, leading to a more concise result. If set to `False`, the function will extract all phrases surrounding each occurrence of the keyword, which may lead to redundancy if the keyword appears frequently in the text. (default value: `False`)
 - `tesseract_cmd`: Path to the Tesseract executable (default value: `"/usr/local/bin/tesseract"`).
 - `input_path`: Path to the folder containing the files to be processed.
 - `output_path`: Path to the folder where the results will be saved.
@@ -147,6 +153,7 @@ if __name__ == "__main__":
         timeout=200,
         result_keyword_table_name="",
         freque_document_keyword_table_name="",
+        fusion_keyword_before_after = False,
         tesseract_cmd="/usr/local/bin/tesseract",
         input_path="/path/to/fichiers_entre",
         output_path="/path/to/resultats"
@@ -164,6 +171,7 @@ if __name__ == "__main__":
 - `timeout` : Durée maximale pour le traitement d'une page en secondes (valeur par défaut : `200`).
 - `result_keyword_table_name` : Nom de la table pour les résultats des mots-clés. Si ce champ est vide, un nom par défaut pour cette table sera `res`.
 - `freque_document_keyword_table_name` : Nom de la table pour les résultats des tables de contingence de la fréquence des mots-clés dans chaque dossier de fichiers. Si ce champ est vide, le nom par défaut pour cette table sera `freque_document_keyword`.
+- `fusion_keyword_before_after` : Ce paramètre booléen contrôle si la fonction doit éviter d'inclure des phrases redondantes lorsque un mot-clé apparaît plusieurs fois à proximité dans le texte. Lorsqu'il est défini sur `True`, la fonction garantira que les phrases entourant un mot-clé sont extraites une seule fois, même si elles chevauchent les phrases entourant une autre occurrence du même mot-clé. Cela empêche la répétition de phrases dans le résultat final, conduisant à un résultat plus concis. Si défini sur `False`, la fonction extraira toutes les phrases entourant chaque occurrence du mot-clé, ce qui peut conduire à une redondance si le mot-clé apparaît fréquemment dans le texte. (valeur par défaut : `False`)
 - `tesseract_cmd` : Chemin vers l'exécutable Tesseract (valeur par défaut : `"/usr/local/bin/tesseract"`).
 - `input_path` : Chemin vers le dossier contenant les fichiers à traiter.
 - `output_path` : Chemin vers le dossier où les résultats seront enregistrés.

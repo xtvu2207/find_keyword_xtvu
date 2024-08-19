@@ -37,6 +37,7 @@ pdf2image = install_and_import('pdf2image')
 pandoc = install_and_import('pandoc')
 pypandoc = install_and_import('pypandoc')
 reportlab = install_and_import('reportlab')
+#xlsxwriter = install_and_import('xlsxwriter')
 
 from docx import Document
 from pdf2image import convert_from_bytes
@@ -47,6 +48,9 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 Event = threading.Event
 Image = PIL.Image
+
+
+
 
 def init_nlp(prefixe_langue):
     if prefixe_langue == "multi":
@@ -98,17 +102,30 @@ def init_nlp(prefixe_langue):
         except Exception as e:
             raise RuntimeError(f"Impossible de charger un modèle de langue pour '{prefixe_langue}' et le modèle de secours '{fallback_model}'.")
 
-def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp):
+def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after):
     doc = nlp(texte)
     phrases_avec_contexte = []
     phrases = list(doc.sents)
+    indices_exclus = set()
+
     for i, sent in enumerate(phrases):
         if mot_clé.lower() in sent.text.lower():
             start = max(0, i - nb_phrases_avant)
             end = min(len(phrases), i + nb_phrases_apres + 1)
-            phrases_contexte = [s.text for s in phrases[start:end]]
-            phrases_avec_contexte.append(" ".join(phrases_contexte))
+            
+            if fusion_keyword_before_after:
+                if any(j in indices_exclus for j in range(start, end)):
+                    continue
+            
+            indices_exclus.update(range(start, end))
+            
+            phrases_contexte = " ".join([s.text for s in phrases[start:end]])
+
+            
+            phrases_avec_contexte.append(phrases_contexte)
+
     return phrases_avec_contexte
+
 
 def compter_mots(phrase):
     return len(phrase.split())
@@ -142,7 +159,7 @@ def extraire_ocr_des_images(page, bbox, pytesseract):
             logging.error(f"Erreur lors de l'extraction OCR de l'image: {str(e)}")
         return ""
 
-def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract):
+def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after):
     data = []
     pages_problematiques = []
     logging.info(f"Traitement de la page {num_page} du fichier {fichier} dans le dossier {id_dossier}")
@@ -163,7 +180,7 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
         texte_complet = " ".join([bloc['text'] for bloc in blocs_texte])
         if texte_complet:
             for mot_clé in keywords:
-                phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp)
+                phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after)
                 for phrase in phrases:
                     data.append({
                         'Dossier_PDF': id_dossier,
@@ -210,7 +227,7 @@ def convertir_docx_en_pdf_en_memoire(docx_path):
         logging.error(f"Erreur lors de la conversion en PDF en mémoire: {str(e)}")
         return None
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres,nlp):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres,nlp, fusion_keyword_before_after):
     chemin_pdf, id_dossier, fichier = args
 
     pytesseract = install_and_import('pytesseract')
@@ -240,7 +257,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
                 with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract)
+                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after)
                     try:
                         page_data, problematic_pages = future.result(timeout=timeout)
                         data.extend(page_data)
@@ -259,20 +276,16 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     data.sort(key=lambda x: x['Num_Page'])
     return data, None
 
-def nettoyer_donnees(dataframe, nlp):
+def nettoyer_donnees(dataframe):
     def clean_cell(cell):
         if isinstance(cell, str):
-            doc = nlp(cell)
-            cleaned_tokens = []
-            for token in doc:
-                if token.is_alpha or token.is_digit or token.ent_type_:
-                    cleaned_tokens.append(token.text)
-            return " ".join(cleaned_tokens).strip()
+            cell = re.sub(r'[^\x20-\x7E]', '', cell)
+            return cell.strip()
         return cell
 
     for col in dataframe.columns:
         if dataframe[col].dtype == 'object':
-            dataframe.loc[:, col] = dataframe[col].apply(clean_cell)
+            dataframe[col] = dataframe[col].apply(clean_cell)
 
     return dataframe
 
@@ -311,6 +324,7 @@ def find_keyword_xtvu(
     timeout=200,
     result_keyword_table_name = "",
     freque_document_keyword_table_name="",
+    fusion_keyword_before_after=False,
     tesseract_cmd="/usr/local/bin/tesseract",
     input_path="/path/to/input",
     output_path="/path/to/output"
@@ -324,14 +338,13 @@ def find_keyword_xtvu(
     if not tesseract_cmd:
         raise ValueError("Le chemin vers Tesseract (TESSERACT_CMD) doit être défini.")
 
-    # Configuration du nombre de threads et des variables globales
     max_threads = os.cpu_count() - threads_rest
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
     file_size_limit = taille * 1024 * 1024
 
     nlp = init_nlp(prefixe_langue)
 
-    # Exécution principale
+
     data = []
     heavy_or_slow_files = []
     start_time = time.time()
@@ -366,7 +379,7 @@ def find_keyword_xtvu(
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:
@@ -393,7 +406,7 @@ def find_keyword_xtvu(
         sys.exit(1)
 
     df = pd.DataFrame(data, columns=['Dossier_PDF', 'Document_PDF', 'Num_Page', 'Mots_Clés_Trouvés', 'Longueur_Phrase_Conteint_Mots_Clés', 'Info'])
-    df = nettoyer_donnees(df, nlp)
+    #df = nettoyer_donnees(df)
     df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['Dossier_PDF', 'Document_PDF', 'Issue'])
 
     df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
