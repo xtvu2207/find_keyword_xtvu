@@ -105,27 +105,32 @@ def init_nlp(prefixe_langue):
 def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after):
     doc = nlp(texte)
     phrases_avec_contexte = []
+    phrases_deja_incluses = set()
     phrases = list(doc.sents)
-    indices_exclus = set()
+    mot_clé_pattern = re.compile(rf'\b{re.escape(mot_clé.lower())}\b')
+    
+    if fusion_keyword_before_after:
+        for i, sent in enumerate(phrases):
+            if mot_clé_pattern.search(sent.text.lower()):
+                start = max(0, i - nb_phrases_avant)
+                end = min(len(phrases), i + nb_phrases_apres + 1)
 
-    for i, sent in enumerate(phrases):
-        if mot_clé.lower() in sent.text.lower():
-            start = max(0, i - nb_phrases_avant)
-            end = min(len(phrases), i + nb_phrases_apres + 1)
-            
-            if fusion_keyword_before_after:
-                if any(j in indices_exclus for j in range(start, end)):
-                    continue
-            
-            indices_exclus.update(range(start, end))
-            
-            phrases_contexte = " ".join([s.text for s in phrases[start:end]])
+                phrases_contexte = [phrases[idx].text for idx in range(start, end)]
+                extrait_actuel = " ".join(phrases_contexte)
+                phrase_cible = sent.text
+                if not any(phrase_cible in extrait for extrait in phrases_deja_incluses):
+                    phrases_avec_contexte.append(extrait_actuel)
+                    phrases_deja_incluses.add(extrait_actuel)
 
-            
-            phrases_avec_contexte.append(phrases_contexte)
-
+    else:
+        for i, sent in enumerate(phrases):
+            if mot_clé_pattern.search(sent.text.lower()):
+                start = max(0, i - nb_phrases_avant)
+                end = min(len(phrases), i + nb_phrases_apres + 1)
+                phrases_contexte = [s.text for s in phrases[start:end]]
+                phrases_avec_contexte.append(" ".join(phrases_contexte))
+    
     return phrases_avec_contexte
-
 
 def compter_mots(phrase):
     return len(phrase.split())
@@ -289,20 +294,41 @@ def nettoyer_donnees(dataframe):
 
     return dataframe
 
+def supprimer_phrases_redondantes(texte, nlp):
+    doc = nlp(texte)
+    phrases_vues = set()
+    texte_sans_redondances = []
+    
+    for sent in doc.sents:
+        phrase = sent.text.strip()
+        if phrase not in phrases_vues:
+            phrases_vues.add(phrase)
+            texte_sans_redondances.append(phrase)
+    
+    return " ".join(texte_sans_redondances)
 
-def generer_tables_contingence(data):
+def generer_tables_contingence(data, nlp):
     df_data = pd.DataFrame(data)
     tables_contingence = {}
+    
     for id_dossier, group in df_data.groupby('Dossier_PDF'):
-        table = group.pivot_table(
-            index='Document_PDF',
-            columns='Mots_Clés_Trouvés',
-            values='Longueur_Phrase_Conteint_Mots_Clés',
-            aggfunc='count',
-            fill_value=0
-        )
-        tables_contingence[id_dossier] = table
+        keyword_counts = {}
+        
+        for document, doc_group in group.groupby('Document_PDF'):
+            combined_info = " ".join(doc_group['Info'].tolist())
+            
+            combined_info = supprimer_phrases_redondantes(combined_info, nlp)
+            
+            keyword_counts[document] = {}
+            for keyword in doc_group['Mots_Clés_Trouvés'].unique():
+                count = len(re.findall(rf'\b{re.escape(keyword)}\b', combined_info, flags=re.IGNORECASE))
+                keyword_counts[document][keyword] = count
+        
+        df_keyword_counts = pd.DataFrame(keyword_counts).T.fillna(0)
+        tables_contingence[id_dossier] = df_keyword_counts
+
     return tables_contingence
+
 
 def enregistrer_tables_contingence(tables_contingence, output_path,freque_document_keyword_table_name):
     if not freque_document_keyword_table_name:
@@ -399,7 +425,7 @@ def find_keyword_xtvu(
     os.makedirs(resultat_path, exist_ok=True)
 
     if data:
-        tables_contingence = generer_tables_contingence(data)
+        tables_contingence = generer_tables_contingence(data, nlp)
         enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
     else:
         logging.error("Il n'y a aucun document contenant les mots-clés ! Veuillez vérifier vos mots-clés =)")
