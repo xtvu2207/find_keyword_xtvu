@@ -53,6 +53,9 @@ Image = PIL.Image
 
 
 def init_nlp(language_prefix):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
     if language_prefix == "multi":
         model_name = "xx_sent_ud_sm"
         try:
@@ -64,7 +67,8 @@ def init_nlp(language_prefix):
                 nlp = spacy.load(model_name)
                 return nlp
             except Exception as e:
-                raise RuntimeError(f"Unable to load the multilingual model '{model_name}'.")
+                logging.error(f"{RED}Unable to load the multilingual model '{model_name}'.{RESET}")
+                sys.exit(1)
     elif language_prefix == "en":
         model_variants = [
             f"{language_prefix}_core_web_lg",
@@ -100,7 +104,8 @@ def init_nlp(language_prefix):
             nlp = spacy.load(fallback_model)
             return nlp
         except Exception as e:
-            raise RuntimeError(f"Unable to load a language model for '{language_prefix}' and the fallback model '{fallback_model}'.")
+            logging.error(f"{RED}Unable to load a language model for '{language_prefix}' and the fallback model '{fallback_model}'.{RESET}")
+            sys.exit(1)
 
 
 def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after):
@@ -133,6 +138,9 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
     
     return phrases_avec_contexte
 
+
+
+
 def compter_mots(phrase):
     return len(phrase.split())
 
@@ -155,6 +163,9 @@ def extraire_blocs_texte(page):
 
 
 def extraire_ocr_des_images(page, bbox, pytesseract):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
     try:
         image_page = page.to_image(resolution=300).original
         width, height = image_page.size
@@ -164,27 +175,35 @@ def extraire_ocr_des_images(page, bbox, pytesseract):
         return effectuer_ocr(image_recadree, pytesseract)
     except Exception as e:
         if str(e) != "tile cannot extend outside image":
-            logging.error(f"Error during OCR extraction from the image: {str(e)}")
+            logging.error(f"{RED}Error during OCR extraction from the image: {str(e)}{RESET}")
         return ""
 
-def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after):
+
+def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract):
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    RESET = '\033[0m'
+
     data = []
     pages_problematiques = []
     logging.info(f"Processing page {num_page} of file {fichier} in folder {id_dossier}")
     try:
         blocs_texte = extraire_blocs_texte(page)
-        for img in page.images:
-            x0, y0, x1, y1 = img["x0"], img["top"], img["x1"], img["bottom"]
-            texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract)
-            if texte_ocr:
-                blocs_texte.append({
-                    'x0': x0,
-                    'top': y0,
-                    'x1': x1,
-                    'bottom': y1,
-                    'text': texte_ocr
-                })
-        blocs_texte.sort(key=lambda x: (x['top'], x['x0']))
+        
+        if use_tesseract:
+            for img in page.images:
+                x0, y0, x1, y1 = img["x0"], img["top"], img["x1"], img["bottom"]
+                texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract)
+                if texte_ocr:
+                    blocs_texte.append({
+                        'x0': x0,
+                        'top': y0,
+                        'x1': x1,
+                        'bottom': y1,
+                        'text': texte_ocr
+                    })
+            blocs_texte.sort(key=lambda x: (x['top'], x['x0']))
+
         texte_complet = " ".join([bloc['text'] for bloc in blocs_texte])
         if texte_complet:
             for mot_clé in keywords:
@@ -199,12 +218,15 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
                         'Info': phrase
                     })
     except Exception as e:
-        logging.error(f"Error processing page {num_page} of file {fichier}: {str(e)}")
+        logging.error(f"{RED}Error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
         pages_problematiques.append(num_page)
     return data, pages_problematiques
 
 
 def convertir_en_docx_in_memory(doc_path, pypandoc):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
     try:
         temp_docx_path = doc_path.rsplit('.', 1)[0] + '_temp.docx'
         pypandoc.convert_file(doc_path, 'docx', outputfile=temp_docx_path)
@@ -213,13 +235,14 @@ def convertir_en_docx_in_memory(doc_path, pypandoc):
         os.remove(temp_docx_path)
         return docx_buffer
     except Exception as e:
-        logging.error(f"Error converting {doc_path} to DOCX in memory: {str(e)}")
+        logging.error(f"{RED}Error converting {doc_path} to DOCX in memory: {str(e)}{RESET}")
         return None
 
 
-
-
 def convertir_docx_en_pdf_en_memoire(docx_path):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
     try:
         doc = Document(docx_path)
         pdf_buffer = BytesIO()
@@ -236,31 +259,41 @@ def convertir_docx_en_pdf_en_memoire(docx_path):
         pdf_buffer.seek(0)  
         return pdf_buffer.read()
     except Exception as e:
-        logging.error(f"Error during PDF conversion in memory: {str(e)}")
+        logging.error(f"{RED}Error during PDF conversion in memory: {str(e)}{RESET}")
         return None
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,tesseract_cmd):
+
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract):
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    GREEN = '\033[92m'
+    RESET = '\033[0m'
+
     chemin_pdf, id_dossier, fichier = args
 
-    pytesseract = install_and_import('pytesseract')
-    pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+    if use_tesseract:
+        pytesseract = install_and_import('pytesseract')
+        pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
+    else:
+        pytesseract = None
+
     pypandoc = install_and_import('pypandoc')
 
     logging.info(f"Processing file {fichier} in folder {id_dossier}")
     data = []
     pages_problematiques = []
     try:
-        if chemin_pdf.endswith(('.rtf','.odt')):
+        if chemin_pdf.endswith(('.rtf', '.odt')):
             docx_buffer = convertir_en_docx_in_memory(chemin_pdf, pypandoc)
             if docx_buffer is None:
-                raise Exception(f"Error converting file {fichier} to DOCX")
+                raise Exception(f"{RED}Error converting file {fichier} to DOCX{RESET}")
             pdf_bytes = convertir_docx_en_pdf_en_memoire(docx_buffer)
             if pdf_bytes is None:
-                raise Exception(f"Error converting DOCX file in memory")
+                raise Exception(f"{RED}Error converting DOCX file in memory{RESET}")
         elif chemin_pdf.endswith('.docx'):
             pdf_bytes = convertir_docx_en_pdf_en_memoire(chemin_pdf)
             if pdf_bytes is None:
-                raise Exception(f"Error converting DOCX file {chemin_pdf}")
+                raise Exception(f"{RED}Error converting DOCX file {chemin_pdf}{RESET}")
         else:
             with open(chemin_pdf, "rb") as f:
                 pdf_bytes = f.read()
@@ -270,24 +303,25 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
                 with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after)
+                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract)
                     try:
                         page_data, problematic_pages = future.result(timeout=timeout)
                         data.extend(page_data)
                         pages_problematiques.extend(problematic_pages)
                     except Exception as e:
-                        logging.error(f"Timeout or error processing page {num_page} of file {fichier}: {str(e)}")
+                        logging.error(f"{RED}Timeout or error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
                         pages_problematiques.append(num_page)
     except Exception as e:
-        logging.error(f"Error opening file {chemin_pdf}: {str(e)}")
+        logging.error(f"{RED}Error opening file {chemin_pdf}: {str(e)}{RESET}")
         return None, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)}
     
     if pages_problematiques:
-        issue_description = f'Timeout or error on pages {", ".join(map(str, pages_problematiques))}'
+        issue_description = f"{YELLOW}Timeout or error on pages {', '.join(map(str, pages_problematiques))}{RESET}"
         return data, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': issue_description}
     
     data.sort(key=lambda x: x['Page_Number'])
     return data, None
+
 
 def nettoyer_donnees(dataframe):
     def clean_cell(cell):
@@ -339,14 +373,22 @@ def generer_tables_contingence(data, nlp):
 
 
 def enregistrer_tables_contingence(tables_contingence, output_path, freque_document_keyword_table_name):
+    YELLOW = '\033[93m'
+    GREEN = '\033[92m'
+    RESET = '\033[0m'
+
     if not freque_document_keyword_table_name:
-        logging.warning("No contingency table name for document by keyword provided, the table name has been set to 'freque_document_keyword' by default")
+        logging.warning(f"{YELLOW}No contingency table name for document by keyword provided, the table name has been set to 'freque_document_keyword' by default{RESET}")
         freque_document_keyword_table_name = "freque_document_keyword"
+    
     excel_path = os.path.join(output_path, f"{freque_document_keyword_table_name}.xlsx")
+    
     with pd.ExcelWriter(excel_path) as writer:
         for id_dossier, table in tables_contingence.items():
             table.to_excel(writer, sheet_name=id_dossier[:31])
-    logging.info(f"Contingency tables have been saved in {excel_path}")
+    
+    logging.info(f"{GREEN}Contingency tables have been saved in {excel_path}{RESET}")
+
 
 def find_keyword_xtvu(
     prefixe_langue='fr',
@@ -359,24 +401,33 @@ def find_keyword_xtvu(
     result_keyword_table_name="",
     freque_document_keyword_table_name="",
     fusion_keyword_before_after=False,
-    tesseract_cmd="/usr/local/bin/tesseract",
+    tesseract_cmd="",
+    use_tesseract=False,  
     input_path="/path/to/input",
     output_path="/path/to/output"
 ):
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RESET = '\033[0m'
+
     tesseract_cmd = tesseract_cmd.replace("\\", "/")
     input_path = input_path.replace("\\", "/")
     output_path = output_path.replace("\\", "/")
 
-
     if not keywords:
-        raise ValueError("The keyword list (KEYWORDS) cannot be empty. Please provide a valid list.")
+        logging.error(f"{RED}The keyword list (KEYWORDS) cannot be empty. Please provide a valid list.{RESET}")
+        sys.exit(1)
     if not output_path or not os.path.isdir(output_path):
-        raise ValueError("The output directory path (output_path) is invalid or not defined.")
+        logging.error(f"{RED}The output directory path (output_path) is invalid or not defined.{RESET}")
+        sys.exit(1)
     if not input_path or not os.path.isdir(input_path):
-        raise ValueError("The input directory path (input_path) is invalid or not defined.")
-    if not tesseract_cmd:
-        raise ValueError("The Tesseract path (TESSERACT_CMD) must be defined.")
-
+        logging.error(f"{RED}The input directory path (input_path) is invalid or not defined.{RESET}")
+        sys.exit(1)
+    if use_tesseract and not tesseract_cmd:
+        logging.error(f"{RED}You chose to use pytesseract, but you didn't provide a Tesseract path. Please provide a Tesseract path or set use_tesseract to False if you don't want to use pytesseract.{RESET}")
+        sys.exit(1)
+        
     max_threads = os.cpu_count() - threads_rest
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
     file_size_limit = taille * 1024 * 1024
@@ -396,7 +447,7 @@ def find_keyword_xtvu(
             if fichier.endswith(('.docx', '.odt', '.pdf', '.rtf')):
                 chemin_pdf = chemin_complet
             else:
-                logging.warning(f"File ignored because unsupported: {fichier}")
+                logging.warning(f"{YELLOW}File ignored because unsupported: {fichier}{RESET}")
                 heavy_or_slow_files.append({
                     'PDF_Folder': id_dossier,
                     'PDF_Document': fichier,
@@ -405,7 +456,7 @@ def find_keyword_xtvu(
                 continue
 
             if taille_fichier > file_size_limit:
-                logging.warning(f"File ignored because too large: {fichier}")
+                logging.warning(f"{YELLOW}File ignored because too large: {fichier}{RESET}")
                 heavy_or_slow_files.append({
                     'PDF_Folder': id_dossier,
                     'PDF_Document': fichier,
@@ -416,7 +467,7 @@ def find_keyword_xtvu(
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,tesseract_cmd): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:
@@ -427,7 +478,7 @@ def find_keyword_xtvu(
                     heavy_or_slow_files.append(issue)
             except Exception as e:
                 chemin_pdf, id_dossier, fichier = pdf_file
-                logging.error(f"Error processing file {fichier}: {str(e)}")
+                logging.error(f"{RED}Error processing file {fichier}: {str(e)}{RESET}")
                 heavy_or_slow_files.append({'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)})
 
     data.sort(key=lambda x: (x['PDF_Document'], x['Page_Number']))
@@ -439,17 +490,16 @@ def find_keyword_xtvu(
         tables_contingence = generer_tables_contingence(data, nlp)
         enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
     else:
-        logging.error("There are no documents containing the keywords! Please check your keywords =)")
+        logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords ={RESET}")
         sys.exit(1)
 
     df = pd.DataFrame(data, columns=['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Length_Of_Extracted_Phrase', 'Info'])
-    #df = nettoyer_donnees(df)
     df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['PDF_Folder', 'PDF_Document', 'Issue'])
 
     df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
     
     if not result_keyword_table_name:
-        logging.warning("No result table name provided, the table name has been set to 'res' by default")
+        logging.warning(f"{YELLOW}No result table name provided, the table name has been set to 'res' by default{RESET}")
         result_keyword_table_name = "res"
 
     df_path = os.path.join(resultat_path, f"{result_keyword_table_name}.xlsx")
@@ -457,7 +507,16 @@ def find_keyword_xtvu(
     df.to_excel(df_path, index=False)
     df_heavy_or_slow.to_excel(heavy_or_slow_df_path, index=False)
 
-    logging.info(f"The results have been saved in {resultat_path}")
+    logging.info(f"{GREEN}The results have been saved in {resultat_path}{RESET}")
     end_time = time.time()
     elapsed_time = end_time - start_time
     logging.info(f"The script took {elapsed_time:.2f} seconds to execute.")
+
+
+
+
+
+
+
+
+
