@@ -1,6 +1,9 @@
 # English version
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
+## What's New in Version 5.5.6
+- **Bug Fix**: Fixed `tesseract` not found issue.
+- **Update**: All log messages are now in English.
 ## What's New in Version 5.5.5
 - **Bug Fix**: Fixed an issue in calculating the contingency tables of keyword frequency when `fusion_keyword_before_after = True`.
 ## What's New in Version 5.5.4

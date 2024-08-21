@@ -52,8 +52,8 @@ Image = PIL.Image
 
 
 
-def init_nlp(prefixe_langue):
-    if prefixe_langue == "multi":
+def init_nlp(language_prefix):
+    if language_prefix == "multi":
         model_name = "xx_sent_ud_sm"
         try:
             nlp = spacy.load(model_name)
@@ -64,28 +64,28 @@ def init_nlp(prefixe_langue):
                 nlp = spacy.load(model_name)
                 return nlp
             except Exception as e:
-                raise RuntimeError(f"Impossible de charger le modèle multilingue '{model_name}'.")
-    elif prefixe_langue == "en":
-        variantes_modele = [
-            f"{prefixe_langue}_core_web_lg",
-            f"{prefixe_langue}_core_web_md",
-            f"{prefixe_langue}_core_web_sm"
+                raise RuntimeError(f"Unable to load the multilingual model '{model_name}'.")
+    elif language_prefix == "en":
+        model_variants = [
+            f"{language_prefix}_core_web_lg",
+            f"{language_prefix}_core_web_md",
+            f"{language_prefix}_core_web_sm"
         ]
     else:
-        variantes_modele = [
-            f"{prefixe_langue}_core_news_lg",
-            f"{prefixe_langue}_core_news_md",
-            f"{prefixe_langue}_core_news_sm"
+        model_variants = [
+            f"{language_prefix}_core_news_lg",
+            f"{language_prefix}_core_news_md",
+            f"{language_prefix}_core_news_sm"
         ]
 
-    for nom_modele in variantes_modele:
+    for model_name in model_variants:
         try:
-            nlp = spacy.load(nom_modele)
+            nlp = spacy.load(model_name)
             return nlp
         except OSError:
             try:
-                subprocess.run([sys.executable, "-m", "spacy", "download", nom_modele], check=True)
-                nlp = spacy.load(nom_modele)
+                subprocess.run([sys.executable, "-m", "spacy", "download", model_name], check=True)
+                nlp = spacy.load(model_name)
                 return nlp
             except Exception as e:
                 continue
@@ -100,7 +100,8 @@ def init_nlp(prefixe_langue):
             nlp = spacy.load(fallback_model)
             return nlp
         except Exception as e:
-            raise RuntimeError(f"Impossible de charger un modèle de langue pour '{prefixe_langue}' et le modèle de secours '{fallback_model}'.")
+            raise RuntimeError(f"Unable to load a language model for '{language_prefix}' and the fallback model '{fallback_model}'.")
+
 
 def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after):
     doc = nlp(texte)
@@ -151,6 +152,8 @@ def extraire_blocs_texte(page):
             })
     return blocs
 
+
+
 def extraire_ocr_des_images(page, bbox, pytesseract):
     try:
         image_page = page.to_image(resolution=300).original
@@ -161,13 +164,13 @@ def extraire_ocr_des_images(page, bbox, pytesseract):
         return effectuer_ocr(image_recadree, pytesseract)
     except Exception as e:
         if str(e) != "tile cannot extend outside image":
-            logging.error(f"Erreur lors de l'extraction OCR de l'image: {str(e)}")
+            logging.error(f"Error during OCR extraction from the image: {str(e)}")
         return ""
 
 def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after):
     data = []
     pages_problematiques = []
-    logging.info(f"Traitement de la page {num_page} du fichier {fichier} dans le dossier {id_dossier}")
+    logging.info(f"Processing page {num_page} of file {fichier} in folder {id_dossier}")
     try:
         blocs_texte = extraire_blocs_texte(page)
         for img in page.images:
@@ -188,17 +191,18 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
                 phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after)
                 for phrase in phrases:
                     data.append({
-                        'Dossier_PDF': id_dossier,
-                        'Document_PDF': fichier,
-                        'Num_Page': num_page,
-                        'Mots_Clés_Trouvés': mot_clé,
-                        'Longueur_Phrase_Conteint_Mots_Clés': compter_mots(phrase),
+                        'PDF_Folder': id_dossier,
+                        'PDF_Document': fichier,
+                        'Page_Number': num_page,
+                        'Keywords_Found': mot_clé,
+                        'Length_Of_Extracted_Phrase': compter_mots(phrase),
                         'Info': phrase
                     })
     except Exception as e:
-        logging.error(f"Erreur lors du traitement de la page {num_page} du fichier {fichier}: {str(e)}")
+        logging.error(f"Error processing page {num_page} of file {fichier}: {str(e)}")
         pages_problematiques.append(num_page)
     return data, pages_problematiques
+
 
 def convertir_en_docx_in_memory(doc_path, pypandoc):
     try:
@@ -209,8 +213,11 @@ def convertir_en_docx_in_memory(doc_path, pypandoc):
         os.remove(temp_docx_path)
         return docx_buffer
     except Exception as e:
-        logging.error(f"Erreur lors de la conversion de {doc_path} en DOCX en mémoire: {str(e)}")
+        logging.error(f"Error converting {doc_path} to DOCX in memory: {str(e)}")
         return None
+
+
+
 
 def convertir_docx_en_pdf_en_memoire(docx_path):
     try:
@@ -229,30 +236,31 @@ def convertir_docx_en_pdf_en_memoire(docx_path):
         pdf_buffer.seek(0)  
         return pdf_buffer.read()
     except Exception as e:
-        logging.error(f"Erreur lors de la conversion en PDF en mémoire: {str(e)}")
+        logging.error(f"Error during PDF conversion in memory: {str(e)}")
         return None
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres,nlp, fusion_keyword_before_after):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,tesseract_cmd):
     chemin_pdf, id_dossier, fichier = args
 
     pytesseract = install_and_import('pytesseract')
+    pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
     pypandoc = install_and_import('pypandoc')
 
-    logging.info(f"Traitement du fichier {fichier} dans le dossier {id_dossier}")
+    logging.info(f"Processing file {fichier} in folder {id_dossier}")
     data = []
     pages_problematiques = []
     try:
         if chemin_pdf.endswith(('.rtf','.odt')):
             docx_buffer = convertir_en_docx_in_memory(chemin_pdf, pypandoc)
             if docx_buffer is None:
-                raise Exception(f"Erreur lors de la conversion du fichier {fichier} en DOCX")
+                raise Exception(f"Error converting file {fichier} to DOCX")
             pdf_bytes = convertir_docx_en_pdf_en_memoire(docx_buffer)
             if pdf_bytes is None:
-                raise Exception(f"Erreur lors de la conversion du fichier DOCX en mémoire")
+                raise Exception(f"Error converting DOCX file in memory")
         elif chemin_pdf.endswith('.docx'):
             pdf_bytes = convertir_docx_en_pdf_en_memoire(chemin_pdf)
             if pdf_bytes is None:
-                raise Exception(f"Erreur lors de la conversion du fichier DOCX {chemin_pdf}")
+                raise Exception(f"Error converting DOCX file {chemin_pdf}")
         else:
             with open(chemin_pdf, "rb") as f:
                 pdf_bytes = f.read()
@@ -268,17 +276,17 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
                         data.extend(page_data)
                         pages_problematiques.extend(problematic_pages)
                     except Exception as e:
-                        logging.error(f"Timeout ou erreur lors du traitement de la page {num_page} du fichier {fichier}: {str(e)}")
+                        logging.error(f"Timeout or error processing page {num_page} of file {fichier}: {str(e)}")
                         pages_problematiques.append(num_page)
     except Exception as e:
-        logging.error(f"Erreur à l'ouverture du fichier {chemin_pdf}: {str(e)}")
-        return None, {'Dossier_PDF': id_dossier, 'Document_PDF': fichier, 'Issue': str(e)}
+        logging.error(f"Error opening file {chemin_pdf}: {str(e)}")
+        return None, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)}
     
     if pages_problematiques:
-        issue_description = f'Délai dépassé ou erreur sur les pages {", ".join(map(str, pages_problematiques))}'
-        return data, {'Dossier_PDF': id_dossier, 'Document_PDF': fichier, 'Issue': issue_description}
+        issue_description = f'Timeout or error on pages {", ".join(map(str, pages_problematiques))}'
+        return data, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': issue_description}
     
-    data.sort(key=lambda x: x['Num_Page'])
+    data.sort(key=lambda x: x['Page_Number'])
     return data, None
 
 def nettoyer_donnees(dataframe):
@@ -311,16 +319,16 @@ def generer_tables_contingence(data, nlp):
     df_data = pd.DataFrame(data)
     tables_contingence = {}
     
-    for id_dossier, group in df_data.groupby('Dossier_PDF'):
+    for id_dossier, group in df_data.groupby('PDF_Folder'):
         keyword_counts = {}
         
-        for document, doc_group in group.groupby('Document_PDF'):
+        for document, doc_group in group.groupby('PDF_Document'):
             combined_info = " ".join(doc_group['Info'].tolist())
             
             combined_info = supprimer_phrases_redondantes(combined_info, nlp)
             
             keyword_counts[document] = {}
-            for keyword in doc_group['Mots_Clés_Trouvés'].unique():
+            for keyword in doc_group['Keywords_Found'].unique():
                 count = len(re.findall(rf'\b{re.escape(keyword)}\b', combined_info, flags=re.IGNORECASE))
                 keyword_counts[document][keyword] = count
         
@@ -330,46 +338,49 @@ def generer_tables_contingence(data, nlp):
     return tables_contingence
 
 
-def enregistrer_tables_contingence(tables_contingence, output_path,freque_document_keyword_table_name):
+def enregistrer_tables_contingence(tables_contingence, output_path, freque_document_keyword_table_name):
     if not freque_document_keyword_table_name:
-        logging.warning("Aucun nom de table de contingence document par keyword fourni, le nom de cette table a été défini par défaut à 'freque_document_keyword'")
+        logging.warning("No contingency table name for document by keyword provided, the table name has been set to 'freque_document_keyword' by default")
         freque_document_keyword_table_name = "freque_document_keyword"
     excel_path = os.path.join(output_path, f"{freque_document_keyword_table_name}.xlsx")
     with pd.ExcelWriter(excel_path) as writer:
         for id_dossier, table in tables_contingence.items():
             table.to_excel(writer, sheet_name=id_dossier[:31])
-    logging.info(f"Les tables de contingence ont été enregistrées dans {excel_path}")
+    logging.info(f"Contingency tables have been saved in {excel_path}")
 
 def find_keyword_xtvu(
-    prefixe_langue = 'fr',
+    prefixe_langue='fr',
     threads_rest=1,
     nb_phrases_avant=10,
     nb_phrases_apres=10,
     keywords=None,
     taille=20,
     timeout=200,
-    result_keyword_table_name = "",
+    result_keyword_table_name="",
     freque_document_keyword_table_name="",
     fusion_keyword_before_after=False,
     tesseract_cmd="/usr/local/bin/tesseract",
     input_path="/path/to/input",
     output_path="/path/to/output"
 ):
+    tesseract_cmd = tesseract_cmd.replace("\\", "/")
+    input_path = input_path.replace("\\", "/")
+    output_path = output_path.replace("\\", "/")
+
+
     if not keywords:
-        raise ValueError("La liste des mots-clés (KEYWORDS) ne peut pas être vide. Veuillez fournir une liste valide.")
+        raise ValueError("The keyword list (KEYWORDS) cannot be empty. Please provide a valid list.")
     if not output_path or not os.path.isdir(output_path):
-        raise ValueError("Le chemin du répertoire de sortie (output_path) est invalide ou non défini.")
+        raise ValueError("The output directory path (output_path) is invalid or not defined.")
     if not input_path or not os.path.isdir(input_path):
-        raise ValueError("Le chemin du répertoire d'entrée (input_path) est invalide ou non défini.")
+        raise ValueError("The input directory path (input_path) is invalid or not defined.")
     if not tesseract_cmd:
-        raise ValueError("Le chemin vers Tesseract (TESSERACT_CMD) doit être défini.")
+        raise ValueError("The Tesseract path (TESSERACT_CMD) must be defined.")
 
     max_threads = os.cpu_count() - threads_rest
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
     file_size_limit = taille * 1024 * 1024
-
     nlp = init_nlp(prefixe_langue)
-
 
     data = []
     heavy_or_slow_files = []
@@ -385,27 +396,27 @@ def find_keyword_xtvu(
             if fichier.endswith(('.docx', '.odt', '.pdf', '.rtf')):
                 chemin_pdf = chemin_complet
             else:
-                logging.warning(f"Fichier ignoré car non supporté: {fichier}")
+                logging.warning(f"File ignored because unsupported: {fichier}")
                 heavy_or_slow_files.append({
-                    'Dossier_PDF': id_dossier,
-                    'Document_PDF': fichier,
-                    'Issue': f"Le fichier est en format {os.path.splitext(fichier)[1]}, veuillez convertir en .docx / .odt / .pdf / .rtf"
+                    'PDF_Folder': id_dossier,
+                    'PDF_Document': fichier,
+                    'Issue': f"The file is in {os.path.splitext(fichier)[1]} format, which is not supported yet. Please convert to .docx / .odt / .pdf / .rtf."
                 })
                 continue
 
             if taille_fichier > file_size_limit:
-                logging.warning(f"Fichier ignoré car trop volumineux: {fichier}")
+                logging.warning(f"File ignored because too large: {fichier}")
                 heavy_or_slow_files.append({
-                    'Dossier_PDF': id_dossier,
-                    'Document_PDF': fichier,
-                    'Issue': f'Fichier supérieur à {taille} MB'
+                    'PDF_Folder': id_dossier,
+                    'PDF_Document': fichier,
+                    'Issue': f'File larger than {taille} MB'
                 })
                 continue
             
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,tesseract_cmd): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:
@@ -416,10 +427,10 @@ def find_keyword_xtvu(
                     heavy_or_slow_files.append(issue)
             except Exception as e:
                 chemin_pdf, id_dossier, fichier = pdf_file
-                logging.error(f"Erreur lors du traitement du fichier {fichier}: {str(e)}")
-                heavy_or_slow_files.append({'Dossier_PDF': id_dossier, 'Document_PDF': fichier, 'Issue': str(e)})
+                logging.error(f"Error processing file {fichier}: {str(e)}")
+                heavy_or_slow_files.append({'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)})
 
-    data.sort(key=lambda x: (x['Document_PDF'], x['Num_Page']))
+    data.sort(key=lambda x: (x['PDF_Document'], x['Page_Number']))
 
     resultat_path = output_path or os.path.join(os.path.expanduser("~"), "Desktop", "resultat")
     os.makedirs(resultat_path, exist_ok=True)
@@ -428,17 +439,17 @@ def find_keyword_xtvu(
         tables_contingence = generer_tables_contingence(data, nlp)
         enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
     else:
-        logging.error("Il n'y a aucun document contenant les mots-clés ! Veuillez vérifier vos mots-clés =)")
+        logging.error("There are no documents containing the keywords! Please check your keywords =)")
         sys.exit(1)
 
-    df = pd.DataFrame(data, columns=['Dossier_PDF', 'Document_PDF', 'Num_Page', 'Mots_Clés_Trouvés', 'Longueur_Phrase_Conteint_Mots_Clés', 'Info'])
+    df = pd.DataFrame(data, columns=['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Length_Of_Extracted_Phrase', 'Info'])
     #df = nettoyer_donnees(df)
-    df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['Dossier_PDF', 'Document_PDF', 'Issue'])
+    df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['PDF_Folder', 'PDF_Document', 'Issue'])
 
     df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
     
     if not result_keyword_table_name:
-        logging.warning("Aucun nom de table de résultat fourni, le nom de cette table a été défini par défaut à 'res'")
+        logging.warning("No result table name provided, the table name has been set to 'res' by default")
         result_keyword_table_name = "res"
 
     df_path = os.path.join(resultat_path, f"{result_keyword_table_name}.xlsx")
@@ -446,7 +457,7 @@ def find_keyword_xtvu(
     df.to_excel(df_path, index=False)
     df_heavy_or_slow.to_excel(heavy_or_slow_df_path, index=False)
 
-    logging.info(f"Les résultats ont été enregistrés dans {resultat_path}")
+    logging.info(f"The results have been saved in {resultat_path}")
     end_time = time.time()
     elapsed_time = end_time - start_time
-    logging.info(f"Le script a pris {elapsed_time:.2f} secondes pour s'exécuter.")
+    logging.info(f"The script took {elapsed_time:.2f} seconds to execute.")
