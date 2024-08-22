@@ -315,7 +315,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
         return None, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)}
     
     if pages_problematiques:
-        issue_description = f"{YELLOW}Timeout or error on pages {', '.join(map(str, pages_problematiques))}{RESET}"
+        issue_description = f'Timeout or error on pages {", ".join(map(str, pages_problematiques))}'
         return data, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': issue_description}
     
     data.sort(key=lambda x: x['Page_Number'])
