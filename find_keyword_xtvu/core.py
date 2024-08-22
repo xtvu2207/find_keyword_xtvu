@@ -297,7 +297,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with open(chemin_pdf, "rb") as f:
                 pdf_bytes = f.read()
 
-        images = convert_from_bytes(pdf_bytes, 500, poppler_path = poppler_path)
+        images = convert_from_bytes(pdf_bytes, poppler_path = poppler_path)
         for num_page, image in enumerate(images, start=1):
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
@@ -433,7 +433,7 @@ def find_keyword_xtvu(
         sys.exit(1)
 
         
-    max_threads = os.cpu_count() - threads_rest
+    max_threads = os.cpu_count()//2
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
     file_size_limit = taille * 1024 * 1024
     nlp = init_nlp(prefixe_langue)
