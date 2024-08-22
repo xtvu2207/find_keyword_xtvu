@@ -5,7 +5,7 @@ setup(
     version="5.6",
     author="Xuan Tung VU",
     description="A package to find keywords in .pdf, .docx, .odt, and .rtf files, with support for multiple languages and the ability to run on multiple CPU cores",
-    long_description=open("README.md").read(),
+    long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
     classifiers=[
         "Programming Language :: Python :: 3",
