@@ -1,3 +1,5 @@
+## 🛠️ What's New in Version 5.6.1.2
+- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
 ## 🛠️ What's New in Version 5.6.1.1
 - **🔧 Bug Fix**: Minor bug fixes to enhance stability.
 ## 🛠️ What's New in Version 5.6.1

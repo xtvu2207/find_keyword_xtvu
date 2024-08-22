@@ -9,7 +9,7 @@ from concurrent.futures import ProcessPoolExecutor, as_completed, ThreadPoolExec
 from io import BytesIO
 import re
 
-max_threads = os.cpu_count() - 3
+max_threads = os.cpu_count()//2
 os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
 
 def install_and_import(package, import_name=None):
