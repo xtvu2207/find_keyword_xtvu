@@ -145,7 +145,22 @@ def compter_mots(phrase):
     return len(phrase.split())
 
 def effectuer_ocr(image, pytesseract):
-    return pytesseract.image_to_string(image, lang='fra')
+    return pytesseract.image_to_string(image, lang="afr+amh+ara+asm+aze+aze_cyrl+bel+ben+bod+bos+bre+bul+cat+ceb+ces+chi_sim+"
+        "chi_sim_vert+chi_tra+chi_tra_vert+chr+cos+cym+dan+deu+div+dzo+ell+eng+enm+"
+        "epo+equ+est+eus+fao+fas+fil+fin+fra+frk+frm+fry+gla+gle+glg+grc+guj+hat+"
+        "heb+hin+hrv+hun+hye+iku+ind+isl+ita+ita_old+jav+jpn+jpn_vert+kan+kat+kat_old+"
+        "kaz+khm+kir+kmr+kor+kor_vert+lao+lat+lav+lit+ltz+mal+mar+mkd+mlt+mon+mri+"
+        "msa+mya+nep+nld+nor+oci+ori+osd+pan+pol+por+pus+que+ron+rus+san+sin+slk+"
+        "slv+snd+spa+spa_old+sqi+srp+srp_latn+sun+swa+swe+syr+tam+tat+tel+tgk+tha+"
+        "tir+ton+tur+uig+ukr+urd+uzb+uzb_cyrl+vie+yid+yor+script/Arabic+script/Armenian+"
+        "script/Bengali+script/Canadian_Aboriginal+script/Cherokee+script/Cyrillic+"
+        "script/Devanagari+script/Ethiopic+script/Fraktur+script/Georgian+script/Greek+"
+        "script/Gujarati+script/Gurmukhi+script/HanS+script/HanS_vert+script/HanT+"
+        "script/HanT_vert+script/Hangul+script/Hangul_vert+script/Hebrew+script/Japanese+"
+        "script/Japanese_vert+script/Kannada+script/Khmer+script/Lao+script/Latin+"
+        "script/Malayalam+script/Myanmar+script/Oriya+script/Sinhala+script/Syriac+"
+        "script/Tamil+script/Telugu+script/Thaana+script/Thai+script/Tibetan+"
+        "script/Vietnamese")
 
 def extraire_blocs_texte(page):
     blocs = []
@@ -263,7 +278,7 @@ def convertir_docx_en_pdf_en_memoire(docx_path):
         return None
 
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path):
     RED = '\033[91m'
     YELLOW = '\033[93m'
     GREEN = '\033[92m'
@@ -298,7 +313,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with open(chemin_pdf, "rb") as f:
                 pdf_bytes = f.read()
 
-        images = convert_from_bytes(pdf_bytes)
+        images = convert_from_bytes(pdf_bytes, 500, poppler_path = poppler_path)
         for num_page, image in enumerate(images, start=1):
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
@@ -404,7 +419,8 @@ def find_keyword_xtvu(
     tesseract_cmd="",
     use_tesseract=False,  
     input_path="/path/to/input",
-    output_path="/path/to/output"
+    output_path="/path/to/output",
+    poppler_path = ""
 ):
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -427,6 +443,10 @@ def find_keyword_xtvu(
     if use_tesseract and not tesseract_cmd:
         logging.error(f"{RED}You chose to use pytesseract, but you didn't provide a Tesseract path. Please provide a Tesseract path or set use_tesseract to False if you don't want to use pytesseract.{RESET}")
         sys.exit(1)
+    if not poppler_path:
+        logging.error(f"{RED}The Poppler path (poppler_path) is invalid or not defined. Please ensure that Poppler is installed and the path to the 'bin' directory is correctly set.{RESET}")
+        sys.exit(1)
+
         
     max_threads = os.cpu_count() - threads_rest
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
@@ -467,7 +487,7 @@ def find_keyword_xtvu(
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,poppler_path): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:

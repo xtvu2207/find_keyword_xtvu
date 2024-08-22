@@ -1,3 +1,5 @@
+## What's New in Version 5.5.9
+- **Bug Fix with `poppler_path`**: Resolves the "Unable to get page count. Is poppler installed and in PATH?" error by allowing you to specify the Poppler installation path.
 ## What's New in Version 5.5.8
 - **New argument `use_tesseract`**: Option to use Tesseract OCR for extracting text from images within documents. If `False`, only the text is processed without OCR.
 ## What's New in Version 5.5.7
@@ -75,7 +77,8 @@ if __name__ == "__main__":
         tesseract_cmd="/usr/local/bin/tesseract",
         use_tesseract=False,
         input_path="/path/to/fichiers_entre",
-        output_path="/path/to/resultats"
+        output_path="/path/to/resultats",
+        poppler_path = ""
     )
 ```
 
@@ -95,6 +98,9 @@ if __name__ == "__main__":
 - `use_tesseract`: This boolean parameter controls whether to use Tesseract OCR for processing images within the documents. When set to `True`, the function will extract text from images using Tesseract OCR, which is useful if the documents contain scanned images or embedded pictures with text. Ensure that `tesseract_cmd` is correctly set to the path of the Tesseract executable. If set to `False`, the function will ignore images in the documents and only process the text that is directly extractable without OCR. This can be faster and avoids the need to install Tesseract. (default value: `False`)
 - `input_path`: Path to the folder containing the files to be processed.
 - `output_path`: Path to the folder where the results will be saved.
+- `poppler_path`: You need to install Poppler by following the instructions on this [link](https://pdf2image.readthedocs.io/en/latest/installation.html). After installing Poppler, specify the path to the `bin` directory inside the Poppler installation using the `poppler_path` argument in your code. This ensures the library can access the necessary binaries to process PDFs correctly, especially on systems where Poppler isn't in the system's PATH. On macOS, in most cases, you can set `poppler_path` to `/usr/local/opt/poppler/bin`.
+
+
 
 ## Outputs
 
@@ -171,7 +177,8 @@ if __name__ == "__main__":
         tesseract_cmd="/usr/local/bin/tesseract",
         use_tesseract=False,
         input_path="/path/to/fichiers_entre",
-        output_path="/path/to/resultats"
+        output_path="/path/to/resultats",
+        poppler_path = ""
     )
 ```
 
@@ -191,6 +198,7 @@ if __name__ == "__main__":
 - `use_tesseract` : Ce paramètre booléen détermine si l'on doit utiliser Tesseract OCR pour traiter les images dans les documents. Lorsqu'il est défini sur `True`, la fonction extraira le texte des images en utilisant Tesseract OCR, ce qui est utile si les documents contiennent des images scannées ou des images intégrées avec du texte. Assurez-vous que `tesseract_cmd` est correctement configuré pour pointer vers le chemin de l'exécutable Tesseract. Si le paramètre est défini sur `False`, la fonction ignorera les images dans les documents et traitera uniquement le texte directement extractible sans OCR. Cela peut être plus rapide et évite la nécessité d'installer Tesseract. (valeur par défaut : `False`)
 - `input_path` : Chemin vers le dossier contenant les fichiers à traiter.
 - `output_path` : Chemin vers le dossier où les résultats seront enregistrés.
+- `poppler_path` : Vous devez installer Poppler en suivant les instructions de ce [lien](https://pdf2image.readthedocs.io/en/latest/installation.html). Après avoir installé Poppler, spécifiez le chemin vers le répertoire `bin` à l'intérieur de l'installation de Poppler en utilisant l'argument `poppler_path` dans votre code. Cela permet à la bibliothèque d'accéder aux binaires nécessaires pour traiter correctement les fichiers PDF, surtout sur les systèmes où Poppler n'est pas dans le `PATH` du système. Sur macOS, vous pouvez généralement définir `poppler_path` sur `/usr/local/opt/poppler/bin`.
 
 ## Sorties
 
