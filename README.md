@@ -1,10 +1,13 @@
+## 🛠️ What's New in Version 5.6.1
+- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
+
 ## ✨ What's New in Version 5.6
 - **🆕 New argument `lang_OCR_tesseract`**: Add the ability to specify the language of the Tesseract OCR model for extracting text from images.
 
 ## 🛠️ What's New in Version 5.5.9
 - **🔧 Bug Fix with `poppler_path`**: Solves the issue with "Unable to get page count. Is poppler installed and in PATH?" by allowing you to specify the Poppler installation path.
 
-## 🆕 What's New in Version 5.5.8
+## ✨ What's New in Version 5.5.8
 - **🆕 New argument `use_tesseract`**: Adds an option to use Tesseract OCR for extracting text from images within documents. When set to `False`, only text is processed without OCR.
 
 ## 🛠️ What's New in Version 5.5.7
