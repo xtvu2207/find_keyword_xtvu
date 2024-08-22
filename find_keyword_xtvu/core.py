@@ -144,23 +144,8 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
 def compter_mots(phrase):
     return len(phrase.split())
 
-def effectuer_ocr(image, pytesseract):
-    return pytesseract.image_to_string(image, lang="afr+amh+ara+asm+aze+aze_cyrl+bel+ben+bod+bos+bre+bul+cat+ceb+ces+chi_sim+"
-        "chi_sim_vert+chi_tra+chi_tra_vert+chr+cos+cym+dan+deu+div+dzo+ell+eng+enm+"
-        "epo+equ+est+eus+fao+fas+fil+fin+fra+frk+frm+fry+gla+gle+glg+grc+guj+hat+"
-        "heb+hin+hrv+hun+hye+iku+ind+isl+ita+ita_old+jav+jpn+jpn_vert+kan+kat+kat_old+"
-        "kaz+khm+kir+kmr+kor+kor_vert+lao+lat+lav+lit+ltz+mal+mar+mkd+mlt+mon+mri+"
-        "msa+mya+nep+nld+nor+oci+ori+osd+pan+pol+por+pus+que+ron+rus+san+sin+slk+"
-        "slv+snd+spa+spa_old+sqi+srp+srp_latn+sun+swa+swe+syr+tam+tat+tel+tgk+tha+"
-        "tir+ton+tur+uig+ukr+urd+uzb+uzb_cyrl+vie+yid+yor+script/Arabic+script/Armenian+"
-        "script/Bengali+script/Canadian_Aboriginal+script/Cherokee+script/Cyrillic+"
-        "script/Devanagari+script/Ethiopic+script/Fraktur+script/Georgian+script/Greek+"
-        "script/Gujarati+script/Gurmukhi+script/HanS+script/HanS_vert+script/HanT+"
-        "script/HanT_vert+script/Hangul+script/Hangul_vert+script/Hebrew+script/Japanese+"
-        "script/Japanese_vert+script/Kannada+script/Khmer+script/Lao+script/Latin+"
-        "script/Malayalam+script/Myanmar+script/Oriya+script/Sinhala+script/Syriac+"
-        "script/Tamil+script/Telugu+script/Thaana+script/Thai+script/Tibetan+"
-        "script/Vietnamese")
+def effectuer_ocr(image, pytesseract, lang_OCR_tesseract):
+    return pytesseract.image_to_string(image, lang=lang_OCR_tesseract)
 
 def extraire_blocs_texte(page):
     blocs = []
@@ -177,7 +162,7 @@ def extraire_blocs_texte(page):
 
 
 
-def extraire_ocr_des_images(page, bbox, pytesseract):
+def extraire_ocr_des_images(page, bbox, pytesseract,lang_OCR_tesseract):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -187,16 +172,15 @@ def extraire_ocr_des_images(page, bbox, pytesseract):
         x0, y0, x1, y1 = bbox
         x0, y0, x1, y1 = max(0, x0), max(0, y0), min(x1, width), min(y1, height)
         image_recadree = image_page.crop((x0, y0, x1, y1))
-        return effectuer_ocr(image_recadree, pytesseract)
+        return effectuer_ocr(image_recadree, pytesseract, lang_OCR_tesseract)
     except Exception as e:
         if str(e) != "tile cannot extend outside image":
             logging.error(f"{RED}Error during OCR extraction from the image: {str(e)}{RESET}")
         return ""
 
 
-def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract):
+def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract):
     RED = '\033[91m'
-    GREEN = '\033[92m'
     RESET = '\033[0m'
 
     data = []
@@ -208,7 +192,7 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
         if use_tesseract:
             for img in page.images:
                 x0, y0, x1, y1 = img["x0"], img["top"], img["x1"], img["bottom"]
-                texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract)
+                texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract,lang_OCR_tesseract)
                 if texte_ocr:
                     blocs_texte.append({
                         'x0': x0,
@@ -278,7 +262,7 @@ def convertir_docx_en_pdf_en_memoire(docx_path):
         return None
 
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path,lang_OCR_tesseract):
     RED = '\033[91m'
     YELLOW = '\033[93m'
     GREEN = '\033[92m'
@@ -318,7 +302,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
                 with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract)
+                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract)
                     try:
                         page_data, problematic_pages = future.result(timeout=timeout)
                         data.extend(page_data)
@@ -417,7 +401,8 @@ def find_keyword_xtvu(
     freque_document_keyword_table_name="",
     fusion_keyword_before_after=False,
     tesseract_cmd="",
-    use_tesseract=False,  
+    use_tesseract=False,
+    lang_OCR_tesseract = "fra",  
     input_path="/path/to/input",
     output_path="/path/to/output",
     poppler_path = ""
@@ -487,7 +472,7 @@ def find_keyword_xtvu(
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,poppler_path): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,poppler_path,lang_OCR_tesseract): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:
