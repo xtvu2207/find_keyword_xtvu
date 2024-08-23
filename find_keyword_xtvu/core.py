@@ -37,8 +37,10 @@ pdf2image = install_and_import('pdf2image')
 pandoc = install_and_import('pandoc')
 pypandoc = install_and_import('pypandoc')
 reportlab = install_and_import('reportlab')
-#xlsxwriter = install_and_import('xlsxwriter')
+tempfile = install_and_import('tempfile')
+collections = install_and_import('collections')
 
+from collections import defaultdict
 from docx import Document
 from pdf2image import convert_from_bytes
 from reportlab.lib.pagesizes import A4
@@ -108,41 +110,60 @@ def init_nlp(language_prefix):
             sys.exit(1)
 
 
-def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after):
+
+def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match):
     doc = nlp(texte)
     phrases_avec_contexte = []
-    phrases_deja_incluses = set()
     phrases = list(doc.sents)
-    mot_clé_pattern = re.compile(rf'\b{re.escape(mot_clé.lower())}\b')
     
-    if fusion_keyword_before_after:
-        for i, sent in enumerate(phrases):
-            if mot_clé_pattern.search(sent.text.lower()):
-                start = max(0, i - nb_phrases_avant)
-                end = min(len(phrases), i + nb_phrases_apres + 1)
-
-                phrases_contexte = [phrases[idx].text for idx in range(start, end)]
-                extrait_actuel = " ".join(phrases_contexte)
-                phrase_cible = sent.text
-                if not any(phrase_cible in extrait for extrait in phrases_deja_incluses):
-                    phrases_avec_contexte.append(extrait_actuel)
-                    phrases_deja_incluses.add(extrait_actuel)
-
+    if exact_match:
+        mot_clé_pattern = re.compile(rf'\b{re.escape(mot_clé.lower())}\b')
     else:
-        for i, sent in enumerate(phrases):
-            if mot_clé_pattern.search(sent.text.lower()):
-                start = max(0, i - nb_phrases_avant)
-                end = min(len(phrases), i + nb_phrases_apres + 1)
-                phrases_contexte = [s.text for s in phrases[start:end]]
-                phrases_avec_contexte.append(" ".join(phrases_contexte))
-    
+        mot_clé_lemme = nlp(mot_clé)[0].lemma_.lower()
+
+    dernier_extrait = None  
+
+    def ajouter_extrait(i):
+        start = max(0, i - nb_phrases_avant)
+        end = min(len(phrases), i + nb_phrases_apres + 1)
+        phrases_contexte = " ".join([phrases[idx].text for idx in range(start, end)])
+        return phrases_contexte
+
+    for i, sent in enumerate(phrases):
+        phrase_mots_clee_actuelle = sent.text
+
+        if exact_match:
+            if mot_clé_pattern.search(phrase_mots_clee_actuelle.lower()):
+                extrait_actuel = ajouter_extrait(i)
+                
+                if fusion_keyword_before_after:
+                    if dernier_extrait is None or phrase_mots_clee_actuelle not in dernier_extrait:
+                        phrases_avec_contexte.append(extrait_actuel)
+                        dernier_extrait = extrait_actuel
+                else:
+                    phrases_avec_contexte.append(extrait_actuel)
+
+        else:
+            if any(token.lemma_.lower() == mot_clé_lemme for token in sent):
+                extrait_actuel = ajouter_extrait(i)
+                
+                if fusion_keyword_before_after:
+                    if dernier_extrait is None or phrase_mots_clee_actuelle not in dernier_extrait:
+                        phrases_avec_contexte.append(extrait_actuel)
+                        dernier_extrait = extrait_actuel
+                else:
+                    phrases_avec_contexte.append(extrait_actuel)
+
     return phrases_avec_contexte
-
-
-
 
 def compter_mots(phrase):
     return len(phrase.split())
+
+def compter_occurrences_mot_cle(phrase, mot_cle):
+    pattern = re.compile(rf'\b{re.escape(mot_cle.lower())}\b', re.IGNORECASE)
+    occurrences = pattern.findall(phrase.lower())
+    return len(occurrences)
+
 
 def effectuer_ocr(image, pytesseract, lang_OCR_tesseract):
     return pytesseract.image_to_string(image, lang=lang_OCR_tesseract)
@@ -179,7 +200,7 @@ def extraire_ocr_des_images(page, bbox, pytesseract,lang_OCR_tesseract):
         return ""
 
 
-def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract):
+def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -206,14 +227,14 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
         texte_complet = " ".join([bloc['text'] for bloc in blocs_texte])
         if texte_complet:
             for mot_clé in keywords:
-                phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after)
+                phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,exact_match)
                 for phrase in phrases:
                     data.append({
                         'PDF_Folder': id_dossier,
                         'PDF_Document': fichier,
                         'Page_Number': num_page,
                         'Keywords_Found': mot_clé,
-                        'Length_Of_Extracted_Phrase': compter_mots(phrase),
+                        'Occurrences_Of_Keyword_In_Phrases': compter_occurrences_mot_cle(phrase, mot_clé),
                         'Info': phrase
                     })
     except Exception as e:
@@ -244,25 +265,31 @@ def convertir_docx_en_pdf_en_memoire(docx_path):
 
     try:
         doc = Document(docx_path)
-        pdf_buffer = BytesIO()
-        pdf = SimpleDocTemplate(pdf_buffer, pagesize=A4)
-        styles = getSampleStyleSheet()
-        elements = []
-        for para in doc.paragraphs:
-            text = para.text
-            style = styles['Normal']
-            p = Paragraph(text, style)
-            elements.append(p)
-            elements.append(Spacer(1, 0.2 * inch)) 
-        pdf.build(elements)
-        pdf_buffer.seek(0)  
-        return pdf_buffer.read()
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf_file:
+            pdf = SimpleDocTemplate(temp_pdf_file.name, pagesize=A4)
+            styles = getSampleStyleSheet()
+            elements = []
+            for para in doc.paragraphs:
+                text = para.text
+                style = styles['Normal']
+                p = Paragraph(text, style)
+                elements.append(p)
+                elements.append(Spacer(1, 0.2 * inch)) 
+            pdf.build(elements)
+        
+        with open(temp_pdf_file.name, 'rb') as f:
+            pdf_content = f.read()
+        
+        os.remove(temp_pdf_file.name)
+
+        return pdf_content
     except Exception as e:
         logging.error(f"{RED}Error during PDF conversion in memory: {str(e)}{RESET}")
         return None
 
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path,lang_OCR_tesseract):
+
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path,lang_OCR_tesseract,exact_match):
     RED = '\033[91m'
     YELLOW = '\033[93m'
     GREEN = '\033[92m'
@@ -302,7 +329,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
                 with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract)
+                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match)
                     try:
                         page_data, problematic_pages = future.result(timeout=timeout)
                         data.extend(page_data)
@@ -348,27 +375,39 @@ def supprimer_phrases_redondantes(texte, nlp):
     
     return " ".join(texte_sans_redondances)
 
-def generer_tables_contingence(data, nlp):
+def generer_tables_contingence(data, nlp, fusion_keyword_before_after):
     df_data = pd.DataFrame(data)
     tables_contingence = {}
-    
-    for id_dossier, group in df_data.groupby('PDF_Folder'):
-        keyword_counts = {}
-        
-        for document, doc_group in group.groupby('PDF_Document'):
-            combined_info = " ".join(doc_group['Info'].tolist())
-            
-            combined_info = supprimer_phrases_redondantes(combined_info, nlp)
-            
-            keyword_counts[document] = {}
-            for keyword in doc_group['Keywords_Found'].unique():
-                count = len(re.findall(rf'\b{re.escape(keyword)}\b', combined_info, flags=re.IGNORECASE))
-                keyword_counts[document][keyword] = count
-        
-        df_keyword_counts = pd.DataFrame(keyword_counts).T.fillna(0)
-        tables_contingence[id_dossier] = df_keyword_counts
+
+    if fusion_keyword_before_after:
+        for id_dossier, group in df_data.groupby('PDF_Folder'):
+            keyword_counts = defaultdict(lambda: defaultdict(int))
+            group = group.sort_values(by=['PDF_Document', 'Page_Number'])
+
+            for document, doc_group in group.groupby('PDF_Document'):
+                combined_info = " ".join(doc_group['Info'].tolist())
+                combined_info = supprimer_phrases_redondantes(combined_info, nlp)
+
+                unique_keywords = set(doc_group['Keywords_Found'].unique())
+
+                for keyword in unique_keywords:
+                    count = len(re.findall(rf'\b{re.escape(keyword)}\b', combined_info, flags=re.IGNORECASE))
+                    keyword_counts[document][keyword] += count
+            df_keyword_counts = pd.DataFrame(keyword_counts).fillna(0).T
+            tables_contingence[id_dossier] = df_keyword_counts
+    else:
+        for id_dossier, group in df_data.groupby('PDF_Folder'):
+            table = group.pivot_table(
+                index='PDF_Document',
+                columns='Keywords_Found',
+                values='Occurrences_Of_Keyword_In_Phrases',
+                aggfunc='count',
+                fill_value=0
+            )
+            tables_contingence[id_dossier] = table
 
     return tables_contingence
+
 
 
 def enregistrer_tables_contingence(tables_contingence, output_path, freque_document_keyword_table_name):
@@ -391,10 +430,11 @@ def enregistrer_tables_contingence(tables_contingence, output_path, freque_docum
 
 def find_keyword_xtvu(
     prefixe_langue='fr',
-    threads_rest=1,
+    threads_rest=None,
     nb_phrases_avant=10,
     nb_phrases_apres=10,
     keywords=None,
+    exact_match = True,
     taille=20,
     timeout=200,
     result_keyword_table_name="",
@@ -432,8 +472,10 @@ def find_keyword_xtvu(
         logging.error(f"{RED}The Poppler path (poppler_path) is invalid or not defined. Please ensure that Poppler is installed and the path to the 'bin' directory is correctly set.{RESET}")
         sys.exit(1)
 
-        
-    max_threads = os.cpu_count()//2
+    if threads_rest == None:        
+        max_threads = os.cpu_count()//2
+    else :
+        max_threads = os.cpu_count()-threads_rest
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
     file_size_limit = taille * 1024 * 1024
     nlp = init_nlp(prefixe_langue)
@@ -472,7 +514,7 @@ def find_keyword_xtvu(
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,poppler_path,lang_OCR_tesseract): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,poppler_path,lang_OCR_tesseract,exact_match): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:
@@ -492,13 +534,13 @@ def find_keyword_xtvu(
     os.makedirs(resultat_path, exist_ok=True)
 
     if data:
-        tables_contingence = generer_tables_contingence(data, nlp)
+        tables_contingence = generer_tables_contingence(data, nlp,fusion_keyword_before_after=fusion_keyword_before_after)
         enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
     else:
         logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords ={RESET}")
         sys.exit(1)
 
-    df = pd.DataFrame(data, columns=['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Length_Of_Extracted_Phrase', 'Info'])
+    df = pd.DataFrame(data, columns=['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Occurrences_Of_Keyword_In_Phrases', 'Info'])
     df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['PDF_Folder', 'PDF_Document', 'Issue'])
 
     df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
@@ -516,12 +558,3 @@ def find_keyword_xtvu(
     end_time = time.time()
     elapsed_time = end_time - start_time
     logging.info(f"The script took {elapsed_time:.2f} seconds to execute.")
-
-
-
-
-
-
-
-
-

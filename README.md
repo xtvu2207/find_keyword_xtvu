@@ -1,7 +1,6 @@
-## 🛠️ What's New in Version 5.6.1.2
-- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
-## 🛠️ What's New in Version 5.6.1.1
-- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
+## ✨ What's New in Version 5.6.2
+- **🆕 New argument `exact_match`**: Enables precise matching of the keyword during text extraction. If set to `False`, the matching will be based on the lemma form, allowing for more flexible searches and capturing different forms of the word.
+- **🆕 New modification to `threads_rest`**: To prevent potential blocking on certain computers, the default number of cores used by this code is now set to **half of the available cores**, ensuring smoother operation without overloading the system. ***If your computer is lagging significantly, you may want to increase this number to help resolve the issue.***
 ## 🛠️ What's New in Version 5.6.1
 - **🔧 Bug Fix**: Minor bug fixes to enhance stability.
 
@@ -81,31 +80,34 @@ from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
     find_keyword_xtvu(
         prefixe_langue = 'fr',
-        threads_rest=1,
-        nb_phrases_avant=10,
-        nb_phrases_apres=10,
-        keywords=[""],
-        taille=20,
-        timeout=200,
-        result_keyword_table_name="",
-        freque_document_keyword_table_name="",
+        threads_rest = None,
+        nb_phrases_avant = 10,
+        nb_phrases_apres = 10,
+        keywords = [""],
+        exact_match = True,
+        taille = 20,
+        timeout = 200,
+        result_keyword_table_name = "",
+        freque_document_keyword_table_name = "",
         fusion_keyword_before_after = False,
-        tesseract_cmd="/usr/local/bin/tesseract",
-        use_tesseract=False,
+        tesseract_cmd = "/usr/local/bin/tesseract",
+        use_tesseract = False,
         lang_OCR_tesseract = 'fra',
-        input_path="/path/to/fichiers_entre",
-        output_path="/path/to/resultats",
+        input_path = "/path/to/fichiers_entre",
+        output_path = "/path/to/resultats",
         poppler_path = ""
     )
+
 ```
 
 
 ## Arguments
 - `prefixe_langue`: Language prefix to specify the language model to use (default value: `'fr'`). To know the supported languages and their prefixes, see the [SpaCy documentation](https://spacy.io/usage/models). If you provide an unsupported prefix, or if you want to use the multilingual model, specify the `multi` argument. In either case, the multilingual model `xx_ent_wiki_sm` will be used. Learn more about this model [here](https://spacy.io/models/xx).
-- `threads_rest`: Number of threads to reserve for other tasks (default value: `1`).
+- `threads_rest`: Number of threads reserved for other tasks. If left unspecified, the library will default to using half of the available cores.
 - `nb_phrases_avant`: Number of sentences to include before the keyword (default value: `10`).
 - `nb_phrases_apres`: Number of sentences to include after the keyword (default value: `10`).
 - `keywords`: List of keywords to search for (default: `[""]`).
+- `exact_match`: This boolean parameter determines whether the keyword search should match the exact word as provided. If set to `True`, only exact matches of the keyword will be considered during text extraction. If set to `False`, the search will be based on the lemma form of the keyword, allowing for more flexible matching by capturing different variations of the word (e.g., "run," "running," "ran"). To learn more about lemma forms, see [this page](https://spacy.io/usage/linguistic-features).
 - `taille`: Maximum file size to process in megabytes (default value: `20` MB).
 - `timeout`: Maximum time for processing a page in seconds (default value: `200`).
 - `result_keyword_table_name`: Name of the table for keyword results. If this field is empty, a default name for this table will be `res`.
@@ -183,20 +185,21 @@ from find_keyword_xtvu import find_keyword_xtvu
 if __name__ == "__main__":
     find_keyword_xtvu(
         prefixe_langue = 'fr',
-        threads_rest=1,
-        nb_phrases_avant=10,
-        nb_phrases_apres=10,
-        keywords=[""],
-        taille=20,
-        timeout=200,
-        result_keyword_table_name="",
-        freque_document_keyword_table_name="",
+        threads_rest = None,
+        nb_phrases_avant = 10,
+        nb_phrases_apres = 10,
+        keywords = [""],
+        exact_match = True,
+        taille = 20,
+        timeout = 200,
+        result_keyword_table_name = "",
+        freque_document_keyword_table_name = "",
         fusion_keyword_before_after = False,
-        tesseract_cmd="/usr/local/bin/tesseract",
-        use_tesseract=False,
+        tesseract_cmd = "/usr/local/bin/tesseract",
+        use_tesseract = False,
         lang_OCR_tesseract = 'fra',
-        input_path="/path/to/fichiers_entre",
-        output_path="/path/to/resultats",
+        input_path = "/path/to/fichiers_entre",
+        output_path = "/path/to/resultats",
         poppler_path = ""
     )
 ```
@@ -204,10 +207,11 @@ if __name__ == "__main__":
 
 ## Arguments
 - `prefixe_langue` : Préfixe de langue pour spécifier le modèle linguistique à utiliser (valeur par défaut : `'fr'`). Pour connaître les langues supportées et leurs préfixes, consultez la [documentation SpaCy](https://spacy.io/usage/models). Si vous fournissez un préfixe non supporté, ou si vous souhaitez utiliser le modèle multilingue, spécifiez l'argument `multi`. Dans les deux cas, le modèle multilingue `xx_ent_wiki_sm` sera utilisé. En savoir plus sur ce modèle [ici](https://spacy.io/models/xx).
-- `threads_rest` : Nombre de threads à réserver pour d'autres tâches (valeur par défaut : `1`).
+- `threads_rest` : Nombre de threads réservés pour d'autres tâches. Si non spécifié, la bibliothèque utilisera par défaut la moitié des cœurs disponibles.
 - `nb_phrases_avant` : Nombre de phrases à inclure avant le mot-clé (valeur par défaut : `10`).
 - `nb_phrases_apres` : Nombre de phrases à inclure après le mot-clé (valeur par défaut : `10`).
 - `keywords` : Liste des mots-clés à rechercher (par défaut : `[""]`).
+- `exact_match` : Ce paramètre booléen détermine si la recherche du mot-clé doit correspondre exactement au mot fourni. S'il est réglé sur `True`, seules les correspondances exactes du mot-clé seront prises en compte lors de l'extraction du texte. S'il est réglé sur `False`, la recherche sera basée sur le lemme du mot-clé, ce qui permet une correspondance plus flexible en capturant différentes variations du mot (par exemple, "courir", "courant", "couru"). Pour en savoir plus sur les formes de lemmes, consultez [cette page](https://spacy.io/usage/linguistic-features).
 - `taille` : Taille maximale des fichiers à traiter en mégaoctets (valeur par défaut : `20` MB).
 - `timeout` : Durée maximale pour le traitement d'une page en secondes (valeur par défaut : `200`).
 - `result_keyword_table_name` : Nom de la table pour les résultats des mots-clés. Si ce champ est vide, un nom par défaut pour cette table sera `res`.
