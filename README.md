@@ -1,3 +1,5 @@
+## ✨ What's New in Version 5.6.3
+- **🚀 Improvement in the way documents are read**: Improved the ways of reading documents to produce more stable results.
 ## ✨ What's New in Version 5.6.2
 - **🆕 New argument `exact_match`**: Enables precise matching of the keyword during text extraction. If set to `False`, the matching will be based on the lemma form, allowing for more flexible searches and capturing different forms of the word.
 - **🆕 New modification to `threads_rest`**: To prevent potential blocking on certain computers, the default number of cores used by this code is now set to **half of the available cores**, ensuring smoother operation without overloading the system. ***If your computer is lagging significantly, you may want to increase this number to help resolve the issue.***
