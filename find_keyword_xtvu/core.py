@@ -109,6 +109,92 @@ def init_nlp(language_prefix):
             logging.error(f"{RED}Unable to load a language model for '{language_prefix}' and the fallback model '{fallback_model}'.{RESET}")
             sys.exit(1)
 
+def compter_mots(phrase):
+    return len(phrase.split())
+
+def compter_occurrences_mot_cle(phrase, mot_cle):
+    pattern = re.compile(rf'\b{re.escape(mot_cle.lower())}\b', re.IGNORECASE)
+    occurrences = pattern.findall(phrase.lower())
+    return len(occurrences)
+
+
+def convertir_en_docx_in_memory(doc_path, pypandoc):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
+    try:
+        temp_docx_path = doc_path.rsplit('.', 1)[0] + '_temp.docx'
+        pypandoc.convert_file(doc_path, 'docx', outputfile=temp_docx_path)
+        with open(temp_docx_path, 'rb') as f:
+            docx_buffer = BytesIO(f.read())
+        os.remove(temp_docx_path)
+        return docx_buffer
+    except Exception as e:
+        logging.error(f"{RED}Error converting {doc_path} to DOCX in memory: {str(e)}{RESET}")
+        return None
+
+
+def convertir_docx_en_pdf_en_memoire(docx_path):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
+    try:
+        doc = Document(docx_path)
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf_file:
+            pdf = SimpleDocTemplate(temp_pdf_file.name, pagesize=A4)
+            styles = getSampleStyleSheet()
+            elements = []
+            for para in doc.paragraphs:
+                text = para.text
+                style = styles['Normal']
+                p = Paragraph(text, style)
+                elements.append(p)
+                elements.append(Spacer(1, 0.2 * inch)) 
+            pdf.build(elements)
+        
+        with open(temp_pdf_file.name, 'rb') as f:
+            pdf_content = f.read()
+        
+        os.remove(temp_pdf_file.name)
+
+        return pdf_content
+    except Exception as e:
+        logging.error(f"{RED}Error during PDF conversion in memory: {str(e)}{RESET}")
+        return None
+    
+    
+def effectuer_ocr(image, pytesseract, lang_OCR_tesseract):
+    return pytesseract.image_to_string(image, lang=lang_OCR_tesseract)
+
+def extraire_blocs_texte(page):
+    blocs = []
+    if page.extract_text():
+        for bloc in page.extract_words():
+            blocs.append({
+                'x0': bloc['x0'],
+                'top': bloc['top'],
+                'x1': bloc['x1'],
+                'bottom': bloc['bottom'],
+                'text': bloc['text']
+            })
+    return blocs
+
+def extraire_ocr_des_images(page, bbox, pytesseract,lang_OCR_tesseract):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
+    try:
+        image_page = page.to_image(resolution=300).original
+        width, height = image_page.size
+        x0, y0, x1, y1 = bbox
+        x0, y0, x1, y1 = max(0, x0), max(0, y0), min(x1, width), min(y1, height)
+        image_recadree = image_page.crop((x0, y0, x1, y1))
+        return effectuer_ocr(image_recadree, pytesseract, lang_OCR_tesseract)
+    except Exception as e:
+        if str(e) != "tile cannot extend outside image":
+            logging.error(f"{RED}Error during OCR extraction from the image: {str(e)}{RESET}")
+        return ""
+
 
 
 def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match):
@@ -156,51 +242,12 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
 
     return phrases_avec_contexte
 
-def compter_mots(phrase):
-    return len(phrase.split())
-
-def compter_occurrences_mot_cle(phrase, mot_cle):
-    pattern = re.compile(rf'\b{re.escape(mot_cle.lower())}\b', re.IGNORECASE)
-    occurrences = pattern.findall(phrase.lower())
-    return len(occurrences)
-
-
-def effectuer_ocr(image, pytesseract, lang_OCR_tesseract):
-    return pytesseract.image_to_string(image, lang=lang_OCR_tesseract)
-
-def extraire_blocs_texte(page):
-    blocs = []
-    if page.extract_text():
-        for bloc in page.extract_words():
-            blocs.append({
-                'x0': bloc['x0'],
-                'top': bloc['top'],
-                'x1': bloc['x1'],
-                'bottom': bloc['bottom'],
-                'text': bloc['text']
-            })
-    return blocs
 
 
 
-def extraire_ocr_des_images(page, bbox, pytesseract,lang_OCR_tesseract):
-    RED = '\033[91m'
-    RESET = '\033[0m'
-
-    try:
-        image_page = page.to_image(resolution=300).original
-        width, height = image_page.size
-        x0, y0, x1, y1 = bbox
-        x0, y0, x1, y1 = max(0, x0), max(0, y0), min(x1, width), min(y1, height)
-        image_recadree = image_page.crop((x0, y0, x1, y1))
-        return effectuer_ocr(image_recadree, pytesseract, lang_OCR_tesseract)
-    except Exception as e:
-        if str(e) != "tile cannot extend outside image":
-            logging.error(f"{RED}Error during OCR extraction from the image: {str(e)}{RESET}")
-        return ""
 
 
-def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract, lang_OCR_tesseract, exact_match, texte_accumule):
+def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -213,7 +260,7 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
         if use_tesseract:
             for img in page.images:
                 x0, y0, x1, y1 = img["x0"], img["top"], img["x1"], img["bottom"]
-                texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract, lang_OCR_tesseract)
+                texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract,lang_OCR_tesseract)
                 if texte_ocr:
                     blocs_texte.append({
                         'x0': x0,
@@ -226,77 +273,28 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
 
         texte_complet = " ".join([bloc['text'] for bloc in blocs_texte])
         if texte_complet:
-            texte_accumule += " " + texte_complet.strip()
-
-            if any(texte_accumule.endswith(punct) for punct in [".", "!", "?"]):
-                for mot_clé in keywords:
-                    phrases = extraire_phrases(texte_accumule, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match)
-                    for phrase in phrases:
-                        data.append({
-                            'PDF_Folder': id_dossier,
-                            'PDF_Document': fichier,
-                            'Page_Number': num_page,
-                            'Keywords_Found': mot_clé,
-                            'Occurrences_Of_Keyword_In_Phrases': compter_occurrences_mot_cle(phrase, mot_clé),
-                            'Info': phrase
-                        })
-                texte_accumule = ""
-
+            for mot_clé in keywords:
+                phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,exact_match)
+                for phrase in phrases:
+                    data.append({
+                        'PDF_Folder': id_dossier,
+                        'PDF_Document': fichier,
+                        'Page_Number': num_page,
+                        'Keywords_Found': mot_clé,
+                        'Occurrences_Of_Keyword_In_Phrases': compter_occurrences_mot_cle(phrase, mot_clé),
+                        'Info': phrase
+                    })
     except Exception as e:
         logging.error(f"{RED}Error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
         pages_problematiques.append(num_page)
-    
-    return data, pages_problematiques, texte_accumule
+    return data, pages_problematiques
 
 
 
-def convertir_en_docx_in_memory(doc_path, pypandoc):
-    RED = '\033[91m'
-    RESET = '\033[0m'
-
-    try:
-        temp_docx_path = doc_path.rsplit('.', 1)[0] + '_temp.docx'
-        pypandoc.convert_file(doc_path, 'docx', outputfile=temp_docx_path)
-        with open(temp_docx_path, 'rb') as f:
-            docx_buffer = BytesIO(f.read())
-        os.remove(temp_docx_path)
-        return docx_buffer
-    except Exception as e:
-        logging.error(f"{RED}Error converting {doc_path} to DOCX in memory: {str(e)}{RESET}")
-        return None
-
-
-def convertir_docx_en_pdf_en_memoire(docx_path):
-    RED = '\033[91m'
-    RESET = '\033[0m'
-
-    try:
-        doc = Document(docx_path)
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as temp_pdf_file:
-            pdf = SimpleDocTemplate(temp_pdf_file.name, pagesize=A4)
-            styles = getSampleStyleSheet()
-            elements = []
-            for para in doc.paragraphs:
-                text = para.text
-                style = styles['Normal']
-                p = Paragraph(text, style)
-                elements.append(p)
-                elements.append(Spacer(1, 0.2 * inch)) 
-            pdf.build(elements)
-        
-        with open(temp_pdf_file.name, 'rb') as f:
-            pdf_content = f.read()
-        
-        os.remove(temp_pdf_file.name)
-
-        return pdf_content
-    except Exception as e:
-        logging.error(f"{RED}Error during PDF conversion in memory: {str(e)}{RESET}")
-        return None
 
 
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path, lang_OCR_tesseract, exact_match):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path,lang_OCR_tesseract,exact_match):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -313,8 +311,6 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     logging.info(f"Processing file {fichier} in folder {id_dossier}")
     data = []
     pages_problematiques = []
-    texte_accumule = ""
-
     try:
         if chemin_pdf.endswith(('.rtf', '.odt')):
             docx_buffer = convertir_en_docx_in_memory(chemin_pdf, pypandoc)
@@ -331,44 +327,29 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with open(chemin_pdf, "rb") as f:
                 pdf_bytes = f.read()
 
-        images = convert_from_bytes(pdf_bytes, poppler_path=poppler_path)
+        images = convert_from_bytes(pdf_bytes, poppler_path = poppler_path)
         for num_page, image in enumerate(images, start=1):
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
                 with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract, lang_OCR_tesseract, exact_match, texte_accumule)
+                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match)
                     try:
-                        page_data, problematic_pages, texte_accumule = future.result(timeout=timeout)
+                        page_data, problematic_pages = future.result(timeout=timeout)
                         data.extend(page_data)
                         pages_problematiques.extend(problematic_pages)
                     except Exception as e:
                         logging.error(f"{RED}Timeout or error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
                         pages_problematiques.append(num_page)
-
     except Exception as e:
         logging.error(f"{RED}Error opening file {chemin_pdf}: {str(e)}{RESET}")
         return None, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)}
     
-    if texte_accumule:
-        for mot_clé in keywords:
-            phrases = extraire_phrases(texte_accumule, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match)
-            for phrase in phrases:
-                data.append({
-                    'PDF_Folder': id_dossier,
-                    'PDF_Document': fichier,
-                    'Page_Number': num_page,
-                    'Keywords_Found': mot_clé,
-                    'Occurrences_Of_Keyword_In_Phrases': compter_occurrences_mot_cle(phrase, mot_clé),
-                    'Info': phrase
-                })
-
     if pages_problematiques:
         issue_description = f'Timeout or error on pages {", ".join(map(str, pages_problematiques))}'
         return data, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': issue_description}
     
     data.sort(key=lambda x: x['Page_Number'])
     return data, None
-
 
 def nettoyer_donnees(dataframe):
     def clean_cell(cell):
