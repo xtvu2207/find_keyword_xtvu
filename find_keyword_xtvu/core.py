@@ -396,9 +396,12 @@ def supprimer_phrases_redondantes(texte, nlp):
     
     return " ".join(texte_sans_redondances)
 
-def generer_tables_contingence(data, nlp, fusion_keyword_before_after):
+def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_match):
     df_data = pd.DataFrame(data)
     tables_contingence = {}
+
+    def lemmatize_keyword(keyword):
+        return nlp(keyword)[0].lemma_.lower()
 
     if fusion_keyword_before_after:
         for id_dossier, group in df_data.groupby('PDF_Folder'):
@@ -407,17 +410,22 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after):
 
             for document, doc_group in group.groupby('PDF_Document'):
                 combined_info = " ".join(doc_group['Info'].tolist())
-                #combined_info = supprimer_phrases_redondantes(combined_info, nlp)
 
                 unique_keywords = set(doc_group['Keywords_Found'].unique())
 
                 for keyword in unique_keywords:
+                    if not exact_match:
+                        keyword = lemmatize_keyword(keyword)
                     count = len(re.findall(rf'\b{re.escape(keyword)}\b', combined_info, flags=re.IGNORECASE))
                     keyword_counts[document][keyword] += count
+
             df_keyword_counts = pd.DataFrame(keyword_counts).fillna(0).T
             tables_contingence[id_dossier] = df_keyword_counts
     else:
         for id_dossier, group in df_data.groupby('PDF_Folder'):
+            if not exact_match:
+                group['Keywords_Found'] = group['Keywords_Found'].apply(lemmatize_keyword)
+            
             table = group.pivot_table(
                 index='PDF_Document',
                 columns='Keywords_Found',
@@ -428,6 +436,7 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after):
             tables_contingence[id_dossier] = table
 
     return tables_contingence
+
 
 
 
