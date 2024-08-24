@@ -564,7 +564,7 @@ def find_keyword_xtvu(
     os.makedirs(resultat_path, exist_ok=True)
 
     if data:
-        tables_contingence = generer_tables_contingence(data, nlp,fusion_keyword_before_after=fusion_keyword_before_after)
+        tables_contingence = generer_tables_contingence(data, nlp,fusion_keyword_before_after=fusion_keyword_before_after,exact_match)
         enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
     else:
         logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords ={RESET}")
