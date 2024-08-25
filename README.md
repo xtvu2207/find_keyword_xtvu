@@ -1,3 +1,5 @@
+## ✨ What's New in Version 5.6.4
+- **🚀 Improvement in the way documents are read**: Enhanced the document reading methods to produce more accurate results.
 
 ## ✨ What's New in Version 5.6.2
 - **🆕 New argument `exact_match`**: Enables precise matching of the keyword during text extraction. If set to `False`, the matching will be based on the lemma form, allowing for more flexible searches and capturing different forms of the word.

@@ -247,7 +247,7 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
 
 
 
-def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match):
+def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match, phrase_incomplete):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -272,6 +272,15 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
             blocs_texte.sort(key=lambda x: (x['top'], x['x0']))
 
         texte_complet = " ".join([bloc['text'] for bloc in blocs_texte])
+        
+        if phrase_incomplete:
+            texte_complet = phrase_incomplete + " " + texte_complet
+        if texte_complet and not texte_complet.strip().endswith(('.', '!', '?')):
+            phrases = list(nlp(texte_complet).sents)
+            phrase_incomplete = phrases.pop(-1).text.strip()
+            texte_complet = " ".join([phrase.text for phrase in phrases])
+        else:
+            phrase_incomplete = ""
         if texte_complet:
             for mot_clé in keywords:
                 phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,exact_match)
@@ -287,7 +296,7 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
     except Exception as e:
         logging.error(f"{RED}Error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
         pages_problematiques.append(num_page)
-    return data, pages_problematiques
+    return data, pages_problematiques, phrase_incomplete
 
 
 
@@ -311,6 +320,9 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     logging.info(f"Processing file {fichier} in folder {id_dossier}")
     data = []
     pages_problematiques = []
+    
+    phrase_incomplete = ""
+    
     try:
         if chemin_pdf.endswith(('.rtf', '.odt')):
             docx_buffer = convertir_en_docx_in_memory(chemin_pdf, pypandoc)
@@ -332,9 +344,9 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
                 page = pdf.pages[num_page - 1]
                 with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match)
+                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match, phrase_incomplete)
                     try:
-                        page_data, problematic_pages = future.result(timeout=timeout)
+                        page_data, problematic_pages,phrase_incomplete = future.result(timeout=timeout)
                         data.extend(page_data)
                         pages_problematiques.extend(problematic_pages)
                     except Exception as e:
