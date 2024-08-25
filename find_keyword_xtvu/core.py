@@ -39,7 +39,8 @@ pypandoc = install_and_import('pypandoc')
 reportlab = install_and_import('reportlab')
 tempfile = install_and_import('tempfile')
 collections = install_and_import('collections')
-
+spicy = install_and_import("spicy")
+from scipy.spatial.distance import cosine
 from collections import defaultdict
 from docx import Document
 from pdf2image import convert_from_bytes
@@ -215,15 +216,19 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
         phrases_contexte = " ".join([phrases[idx].text for idx in range(start, end)])
         return phrases_contexte
 
+    def similarite_semantique(a, b):
+        vec_a = nlp(a).vector
+        vec_b = nlp(b).vector
+        return 1 - cosine(vec_a, vec_b)
+
     for i, sent in enumerate(phrases):
         phrase_mots_clee_actuelle = sent.text
 
         if exact_match:
             if mot_clé_pattern.search(phrase_mots_clee_actuelle.lower()):
                 extrait_actuel = ajouter_extrait(i)
-                
                 if fusion_keyword_before_after:
-                    if dernier_extrait is None or phrase_mots_clee_actuelle not in dernier_extrait:
+                    if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
                         phrases_avec_contexte.append(extrait_actuel)
                         dernier_extrait = extrait_actuel
                 else:
@@ -232,16 +237,14 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
         else:
             if any(token.lemma_.lower() == mot_clé_lemme for token in sent):
                 extrait_actuel = ajouter_extrait(i)
-                
                 if fusion_keyword_before_after:
-                    if dernier_extrait is None or phrase_mots_clee_actuelle not in dernier_extrait:
+                    if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
                         phrases_avec_contexte.append(extrait_actuel)
                         dernier_extrait = extrait_actuel
                 else:
                     phrases_avec_contexte.append(extrait_actuel)
 
     return phrases_avec_contexte
-
 
 
 
@@ -284,7 +287,9 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
         if texte_complet:
             for mot_clé in keywords:
                 phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,exact_match)
+                
                 for phrase in phrases:
+                    
                     data.append({
                         'PDF_Folder': id_dossier,
                         'PDF_Document': fichier,

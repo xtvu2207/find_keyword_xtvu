@@ -1,3 +1,5 @@
+## ✨ What's New in Version 5.6.4.1
+- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
 ## ✨ What's New in Version 5.6.4
 - **🚀 Improvement in the way documents are read**: Enhanced the document reading methods to produce more accurate results.
 
