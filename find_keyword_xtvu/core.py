@@ -39,7 +39,7 @@ pypandoc = install_and_import('pypandoc')
 reportlab = install_and_import('reportlab')
 tempfile = install_and_import('tempfile')
 collections = install_and_import('collections')
-spicy = install_and_import("spicy")
+scipy = install_and_import("scipy")
 from scipy.spatial.distance import cosine
 from collections import defaultdict
 from docx import Document

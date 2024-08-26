@@ -1,4 +1,4 @@
-## ✨ What's New in Version 5.6.5
+## ✨ What's New in Version 5.6.6
 - **🚀 Enhanced Keyword Processing**: The library now supports the identification and handling of synonymous keywords. You can search for individual keywords or groups of synonymous keywords, and they will all be treated equivalently, ensuring a more flexible and accurate search process.
 ## ✨ What's New in Version 5.6.4
 - **🚀 Improvement in the way documents are read**: Enhanced the document reading methods to produce more accurate results.
