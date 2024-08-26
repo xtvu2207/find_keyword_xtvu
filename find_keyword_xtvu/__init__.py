@@ -18,11 +18,15 @@ def check_and_update_library(library_name):
             
             user_input = input("Do you want to update the library? Type 1 for Yes and 0 for No: ")
             if user_input == '1':
-                print(f"Updating {library_name}...")
-                subprocess.check_call([sys.executable, "-m", "pip", "install", "--upgrade", library_name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                print(f"Uninstalling the old version of {library_name}...")
+                subprocess.check_call([sys.executable, "-m", "pip", "uninstall", library_name, "-y"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                
+                print(f"Installing the new version of {library_name}...")
+                subprocess.check_call([sys.executable, "-m", "pip", "install", library_name + "==" + latest_version], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
                 importlib.invalidate_caches()
                 importlib.reload(pkg_resources)
                 new_installed_version = pkg_resources.get_distribution(library_name).version
+                
                 if "ipykernel" in sys.modules or "IPython" in sys.modules:
                     from IPython.display import display, HTML
                     display(HTML(f"<div style='color: red; font-weight: bold;'>Update completed. Please restart the kernel to apply the new version of {library_name}.</div>"))
@@ -34,11 +38,9 @@ def check_and_update_library(library_name):
                 print(f"No update will be performed for {library_name}. Current version is {installed_version}.")
 
     except requests.RequestException:
-        pass
+        print("Failed to fetch library details from PyPI.")
+    except subprocess.CalledProcessError as e:
+        print("Failed to install or uninstall the library. Please check the permissions and the library name.")
 
 library_name = 'find_keyword_xtvu'
 check_and_update_library(library_name)
-
-from .core import find_keyword_xtvu
-
-__all__ = ["find_keyword_xtvu"]

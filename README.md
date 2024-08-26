@@ -1,3 +1,5 @@
+## ✨ What's New in Version 5.6.7
+- **🔧 Bug Fix**: Fixed the error in generating contingency tables and calculating occurrences of keywords in a sentence.
 ## ✨ What's New in Version 5.6.6
 - **🚀 Enhanced Keyword Processing**: The library now supports the identification and handling of synonymous keywords. You can search for individual keywords or groups of synonymous keywords, and they will all be treated equivalently, ensuring a more flexible and accurate search process.
 ## ✨ What's New in Version 5.6.4

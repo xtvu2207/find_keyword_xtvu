@@ -116,30 +116,22 @@ def compter_mots(phrase):
 
 def compter_occurrences_mot_cle(phrase, mots_cles, nlp, exact_match):
     total_occurrences = 0
-
+    
     if not exact_match:
         phrase = " ".join([token.lemma_.lower() for token in nlp(phrase)])
+    if isinstance(mots_cles, str):
+        mots_cles = [mots_cles]
+    
 
     for mot_cle in mots_cles:
-        if isinstance(mot_cle, list):
-            if exact_match:
-                pattern = re.compile(rf'\b({"|".join(re.escape(mot.lower()) for mot in mot_cle)})\b', re.IGNORECASE)
-            else:
-                mot_cle_lemmatized = [nlp(mot)[0].lemma_.lower() for mot in mot_cle]
-                pattern = re.compile(rf'\b({"|".join(re.escape(mot) for mot in mot_cle_lemmatized)})\b', re.IGNORECASE)
-            
-            if pattern.search(phrase.lower()):
-                total_occurrences += 1
+        if exact_match:
+            pattern = re.compile(rf'\b{re.escape(mot_cle.lower())}\b', re.IGNORECASE)
         else:
-            if exact_match:
-                pattern = re.compile(rf'\b{re.escape(mot_cle.lower())}\b', re.IGNORECASE)
-            else:
-                mot_cle_lemme = nlp(mot_cle)[0].lemma_.lower()
-                pattern = re.compile(rf'\b{re.escape(mot_cle_lemme)}\b', re.IGNORECASE)
-            
-            occurrences = len(pattern.findall(phrase.lower()))
-            total_occurrences += occurrences
-
+            mot_cle_lemme = nlp(mot_cle)[0].lemma_.lower()
+            pattern = re.compile(rf'\b{re.escape(mot_cle_lemme)}\b', re.IGNORECASE)
+        
+        occurrences = len(pattern.findall(phrase.lower()))
+        total_occurrences += occurrences
     return total_occurrences
 
 
@@ -450,16 +442,13 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_mat
         return " ".join([token.lemma_.lower() for token in nlp(text)])
 
     def lemmatize_keyword(keyword, nlp):
-        if isinstance(keyword, list):
-            return [nlp(k)[0].lemma_.lower() for k in keyword]
-        else:
-            return nlp(keyword)[0].lemma_.lower()
+        return nlp(keyword)[0].lemma_.lower()
 
-    def stringify_keyword(keyword):
-        if isinstance(keyword, list):
-            return ', '.join(sorted(keyword))
-        else:
-            return keyword
+    def split_keywords(keywords):
+ 
+        if isinstance(keywords, str):
+            return [k.strip() for k in keywords.split(',')]
+        return [keywords]  
 
     if fusion_keyword_before_after:
         for id_dossier, group in df_data.groupby('PDF_Folder'):
@@ -468,38 +457,23 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_mat
 
             for document, doc_group in group.groupby('PDF_Document'):
                 combined_info = " ".join(doc_group['Info'].tolist())
-
                 if not exact_match:
                     combined_info = lemmatize_text(combined_info, nlp)
 
-                for keyword in doc_group['Keywords_Found'].unique():
-                    if isinstance(keyword, list):
-                        total_count = 0
-                        for sub_keyword in keyword:
-                            if not exact_match:
-                                sub_keyword = lemmatize_keyword(sub_keyword, nlp)
-                            pattern = re.compile(rf'\b{re.escape(sub_keyword)}\b', re.IGNORECASE)
-                            count = len(pattern.findall(combined_info.lower()))
-                            total_count += count
-
-                        keyword_str = stringify_keyword(keyword)
-                        keyword_counts[document][keyword_str] += total_count
-                    else:
+                for keywords_str in doc_group['Keywords_Found'].unique():
+                    keywords_list = split_keywords(keywords_str)
+                    for keyword in keywords_list:
                         if not exact_match:
                             keyword = lemmatize_keyword(keyword, nlp)
                         pattern = re.compile(rf'\b{re.escape(keyword)}\b', re.IGNORECASE)
                         count = len(pattern.findall(combined_info.lower()))
-
-                        keyword_str = stringify_keyword(keyword)
-                        keyword_counts[document][keyword_str] += count
+                        keyword_counts[document][keyword] += count
 
             df_keyword_counts = pd.DataFrame(keyword_counts).fillna(0).T
             tables_contingence[id_dossier] = df_keyword_counts
 
     else:
         for id_dossier, group in df_data.groupby('PDF_Folder'):
-            group['Keywords_Found'] = group['Keywords_Found'].apply(stringify_keyword)
-
             table = group.pivot_table(
                 index='PDF_Document',
                 columns='Keywords_Found',
@@ -509,7 +483,11 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_mat
             )
             tables_contingence[id_dossier] = table
 
+
     return tables_contingence
+
+
+
 
 
 
