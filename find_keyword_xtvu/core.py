@@ -113,10 +113,31 @@ def init_nlp(language_prefix):
 def compter_mots(phrase):
     return len(phrase.split())
 
-def compter_occurrences_mot_cle(phrase, mot_cle):
-    pattern = re.compile(rf'\b{re.escape(mot_cle.lower())}\b', re.IGNORECASE)
-    occurrences = pattern.findall(phrase.lower())
+
+def compter_occurrences_mot_cle(phrase, mot_cle, nlp, exact_match):
+    if exact_match:
+        if isinstance(mot_cle, list):
+            pattern = re.compile(rf'\b({"|".join(re.escape(mot.lower()) for mot in mot_cle)})\b', re.IGNORECASE)
+        else:
+            pattern = re.compile(rf'\b{re.escape(mot_cle.lower())}\b', re.IGNORECASE)
+        occurrences = pattern.findall(phrase.lower())
+    else:
+        doc = nlp(phrase)
+        lemmatized_phrase = " ".join([token.lemma_.lower() for token in doc])
+        
+        if isinstance(mot_cle, list):
+            mot_cle_lemmatized = [nlp(mot)[0].lemma_.lower() for mot in mot_cle]
+            pattern = re.compile(rf'\b({"|".join(re.escape(mot) for mot in mot_cle_lemmatized)})\b', re.IGNORECASE)
+        else:
+            mot_cle_lemme = nlp(mot_cle)[0].lemma_.lower()
+            pattern = re.compile(rf'\b{re.escape(mot_cle_lemme)}\b', re.IGNORECASE)
+        
+        occurrences = pattern.findall(lemmatized_phrase)
+    
     return len(occurrences)
+
+
+
 
 
 def convertir_en_docx_in_memory(doc_path, pypandoc):
@@ -203,10 +224,16 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
     phrases_avec_contexte = []
     phrases = list(doc.sents)
     
-    if exact_match:
-        mot_clé_pattern = re.compile(rf'\b{re.escape(mot_clé.lower())}\b')
-    else:
-        mot_clé_lemme = nlp(mot_clé)[0].lemma_.lower()
+    if isinstance(mot_clé, list):  
+        if exact_match:
+            mot_clé_pattern = re.compile(rf'\b({"|".join(re.escape(mot.lower()) for mot in mot_clé)})\b')
+        else:
+            mot_clé_lemme = [nlp(mot)[0].lemma_.lower() for mot in mot_clé]
+    else:   
+        if exact_match:
+            mot_clé_pattern = re.compile(rf'\b{re.escape(mot_clé.lower())}\b')
+        else:
+            mot_clé_lemme = nlp(mot_clé)[0].lemma_.lower()
 
     dernier_extrait = None  
 
@@ -225,28 +252,45 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
         phrase_mots_clee_actuelle = sent.text
 
         if exact_match:
-            if mot_clé_pattern.search(phrase_mots_clee_actuelle.lower()):
-                extrait_actuel = ajouter_extrait(i)
-                if fusion_keyword_before_after:
-                    if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
+            if isinstance(mot_clé, list):   
+                if mot_clé_pattern.search(phrase_mots_clee_actuelle.lower()):
+                    extrait_actuel = ajouter_extrait(i)
+                    if fusion_keyword_before_after:
+                        if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
+                            phrases_avec_contexte.append(extrait_actuel)
+                            dernier_extrait = extrait_actuel
+                    else:
                         phrases_avec_contexte.append(extrait_actuel)
-                        dernier_extrait = extrait_actuel
-                else:
-                    phrases_avec_contexte.append(extrait_actuel)
-
+            else:   
+                if mot_clé_pattern.search(phrase_mots_clee_actuelle.lower()):
+                    extrait_actuel = ajouter_extrait(i)
+                    if fusion_keyword_before_after:
+                        if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
+                            phrases_avec_contexte.append(extrait_actuel)
+                            dernier_extrait = extrait_actuel
+                    else:
+                        phrases_avec_contexte.append(extrait_actuel)
         else:
-            if any(token.lemma_.lower() == mot_clé_lemme for token in sent):
-                extrait_actuel = ajouter_extrait(i)
-                if fusion_keyword_before_after:
-                    if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
+            if isinstance(mot_clé, list):  
+                if any(token.lemma_.lower() in mot_clé_lemme for token in sent):
+                    extrait_actuel = ajouter_extrait(i)
+                    if fusion_keyword_before_after:
+                        if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
+                            phrases_avec_contexte.append(extrait_actuel)
+                            dernier_extrait = extrait_actuel
+                    else:
                         phrases_avec_contexte.append(extrait_actuel)
-                        dernier_extrait = extrait_actuel
-                else:
-                    phrases_avec_contexte.append(extrait_actuel)
+            else:   
+                if any(token.lemma_.lower() == mot_clé_lemme for token in sent):
+                    extrait_actuel = ajouter_extrait(i)
+                    if fusion_keyword_before_after:
+                        if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
+                            phrases_avec_contexte.append(extrait_actuel)
+                            dernier_extrait = extrait_actuel
+                    else:
+                        phrases_avec_contexte.append(extrait_actuel)
 
     return phrases_avec_contexte
-
-
 
 
 
@@ -287,24 +331,21 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
         if texte_complet:
             for mot_clé in keywords:
                 phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,exact_match)
-                
+                mot_clé_str = ', '.join(mot_clé) if isinstance(mot_clé, list) else mot_clé
                 for phrase in phrases:
                     
                     data.append({
                         'PDF_Folder': id_dossier,
                         'PDF_Document': fichier,
                         'Page_Number': num_page,
-                        'Keywords_Found': mot_clé,
-                        'Occurrences_Of_Keyword_In_Phrases': compter_occurrences_mot_cle(phrase, mot_clé),
+                        'Keywords_Found': mot_clé_str,
+                        'Occurrences_Of_Keyword_In_Phrases': compter_occurrences_mot_cle(phrase, mot_clé, nlp, exact_match),
                         'Info': phrase
                     })
     except Exception as e:
         logging.error(f"{RED}Error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
         pages_problematiques.append(num_page)
     return data, pages_problematiques, phrase_incomplete
-
-
-
 
 
 
@@ -398,8 +439,17 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_mat
     df_data = pd.DataFrame(data)
     tables_contingence = {}
 
-    def lemmatize_keyword(keyword):
-        return nlp(keyword)[0].lemma_.lower()
+    def lemmatize_keyword(keyword, nlp):
+        if isinstance(keyword, list):
+            return [nlp(k)[0].lemma_.lower() for k in keyword]
+        else:
+            return nlp(keyword)[0].lemma_.lower()
+
+    def stringify_keyword(keyword):
+        if isinstance(keyword, list):
+            return ', '.join(keyword)
+        else:
+            return keyword
 
     if fusion_keyword_before_after:
         for id_dossier, group in df_data.groupby('PDF_Folder'):
@@ -413,7 +463,7 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_mat
 
                 for keyword in unique_keywords:
                     if not exact_match:
-                        keyword = lemmatize_keyword(keyword)
+                        keyword = lemmatize_keyword(keyword, nlp)
                     count = len(re.findall(rf'\b{re.escape(keyword)}\b', combined_info, flags=re.IGNORECASE))
                     keyword_counts[document][keyword] += count
 
@@ -422,8 +472,10 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_mat
     else:
         for id_dossier, group in df_data.groupby('PDF_Folder'):
             if not exact_match:
-                group['Keywords_Found'] = group['Keywords_Found'].apply(lemmatize_keyword)
+                group['Keywords_Found'] = group['Keywords_Found'].apply(lambda x: lemmatize_keyword(x, nlp))
             
+            group['Keywords_Found'] = group['Keywords_Found'].apply(stringify_keyword)
+
             table = group.pivot_table(
                 index='PDF_Document',
                 columns='Keywords_Found',
@@ -434,6 +486,7 @@ def generer_tables_contingence(data, nlp, fusion_keyword_before_after, exact_mat
             tables_contingence[id_dossier] = table
 
     return tables_contingence
+
 
 
 

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: find_keyword_xtvu
-Version: 5.6.4.1
+Version: 5.6.5
 Summary: A package to find keywords in .pdf, .docx, .odt, and .rtf files, with support for multiple languages and the ability to run on multiple CPU cores
 Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
@@ -29,8 +29,8 @@ Requires-Dist: requests
 Requires-Dist: packaging
 Requires-Dist: setuptools>=40.0.0
 
-## ✨ What's New in Version 5.6.4.1
-- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
+## ✨ What's New in Version 5.6.5
+- **🚀 Enhanced Keyword Processing**: The library now supports the identification and handling of synonymous keywords. You can search for individual keywords or groups of synonymous keywords, and they will all be treated equivalently, ensuring a more flexible and accurate search process.
 ## ✨ What's New in Version 5.6.4
 - **🚀 Improvement in the way documents are read**: Enhanced the document reading methods to produce more accurate results.
 
@@ -119,7 +119,7 @@ if __name__ == "__main__":
         threads_rest = None,
         nb_phrases_avant = 10,
         nb_phrases_apres = 10,
-        keywords = [""],
+        keywords = [["",""],""],
         exact_match = True,
         taille = 20,
         timeout = 200,
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 - `threads_rest`: Number of threads reserved for other tasks. If left unspecified, the library will default to using half of the available cores.
 - `nb_phrases_avant`: Number of sentences to include before the keyword (default value: `10`).
 - `nb_phrases_apres`: Number of sentences to include after the keyword (default value: `10`).
-- `keywords`: List of keywords to search for (default: `[""]`).
+- `keywords`: List of keywords to search for. To group multiple keywords that should be treated the same way, use a list format like `["keyword1", "keyword2"]` (for example, `["local", "nearby"]` to treat them as synonyms). If you want to treat keywords separately, simply place each keyword as a standalone string, like `"keyword"`. For example, if we structure it like this `["local", "nearby"], "school", "library", "park"]`, it means that "local" and "nearby" will be treated as synonyms, while "school", "library", and "park" will each be treated as distinct keywords.
 - `exact_match`: This boolean parameter determines whether the keyword search should match the exact word as provided. If set to `True`, only exact matches of the keyword will be considered during text extraction. If set to `False`, the search will be based on the lemma form of the keyword, allowing for more flexible matching by capturing different variations of the word (e.g., "run," "running," "ran"). To learn more about lemma forms, see [this page](https://spacy.io/usage/linguistic-features).
 - `taille`: Maximum file size to process in megabytes (default value: `20` MB).
 - `timeout`: Maximum time for processing a page in seconds (default value: `200`).
@@ -224,7 +224,7 @@ if __name__ == "__main__":
         threads_rest = None,
         nb_phrases_avant = 10,
         nb_phrases_apres = 10,
-        keywords = [""],
+        keywords = [["",""],""],
         exact_match = True,
         taille = 20,
         timeout = 200,
@@ -246,7 +246,7 @@ if __name__ == "__main__":
 - `threads_rest` : Nombre de threads réservés pour d'autres tâches. Si non spécifié, la bibliothèque utilisera par défaut la moitié des cœurs disponibles.
 - `nb_phrases_avant` : Nombre de phrases à inclure avant le mot-clé (valeur par défaut : `10`).
 - `nb_phrases_apres` : Nombre de phrases à inclure après le mot-clé (valeur par défaut : `10`).
-- `keywords` : Liste des mots-clés à rechercher (par défaut : `[""]`).
+- `keywords` : Liste de mots-clés à rechercher. Pour regrouper plusieurs mots-clés qui doivent être traités de la même manière, utilisez un format de liste comme `["mot1", "mot2"]` (par exemple, `["local", "proche"]` pour les traiter comme des synonymes). Si vous souhaitez traiter les mots-clés séparément, placez chaque mot-clé sous forme de chaîne de caractères individuelle, comme `"mot"`. Par exemple, si nous structurons la liste ainsi `["local", "proche"], "école", "bibliothèque", "parc"]`, cela signifie que "local" et "proche" seront traités comme des synonymes, tandis que "école", "bibliothèque" et "parc" seront chacun traités comme des mots-clés distincts.
 - `exact_match` : Ce paramètre booléen détermine si la recherche du mot-clé doit correspondre exactement au mot fourni. S'il est réglé sur `True`, seules les correspondances exactes du mot-clé seront prises en compte lors de l'extraction du texte. S'il est réglé sur `False`, la recherche sera basée sur le lemme du mot-clé, ce qui permet une correspondance plus flexible en capturant différentes variations du mot (par exemple, "courir", "courant", "couru"). Pour en savoir plus sur les formes de lemmes, consultez [cette page](https://spacy.io/usage/linguistic-features).
 - `taille` : Taille maximale des fichiers à traiter en mégaoctets (valeur par défaut : `20` MB).
 - `timeout` : Durée maximale pour le traitement d'une page en secondes (valeur par défaut : `200`).
