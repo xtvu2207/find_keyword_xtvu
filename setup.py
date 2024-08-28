@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="find_keyword_xtvu",
-    version="5.6.8rc1",
+    version="5.6.8rc2",
     author="Xuan Tung VU",
     description="A package to find keywords in .pdf, .docx, .odt, and .rtf files, with support for multiple languages and the ability to run on multiple CPU cores",
     long_description=open("README.md", encoding="utf-8").read(),

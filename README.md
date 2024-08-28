@@ -1,5 +1,5 @@
 ## ✨ What's New in Version 5.6.8
-- **Important Change to Argument**: To simplify the requirements of this library, I have decided to remove the dependency on Poppler. Now, you don’t need to download Poppler to use this library. This change simplifies the process for the average user.
+- **❗Important Change to Argument**: To simplify the requirements of this library, I have decided to remove the dependency on **Poppler**. Now, you don’t need to download Poppler to use this library. This change simplifies the process for the average user.
 - **🆕 New Argument `use_full_tesseract`**: This new argument allows you to decide whether to apply Tesseract to the entire document. This option enables us to extract text while maintaining the structure of the text, which is beneficial for users with high-performance computers.
 
 ## ✨ What's New in Version 5.6.7
