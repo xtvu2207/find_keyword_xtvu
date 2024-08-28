@@ -1,3 +1,7 @@
+## ✨ What's New in Version 5.6.8
+- **Important Change to Argument**: To simplify the requirements of this library, I have decided to remove the dependency on Poppler. Now, you don’t need to download Poppler to use this library. This change simplifies the process for the average user.
+- **🆕 New Argument `use_full_tesseract`**: This new argument allows you to decide whether to apply Tesseract to the entire document. This option enables us to extract text while maintaining the structure of the text, which is beneficial for users with high-performance computers.
+
 ## ✨ What's New in Version 5.6.7
 - **🔧 Bug Fix**: Fixed the error in generating contingency tables and calculating occurrences of keywords in a sentence.
 ## ✨ What's New in Version 5.6.6
@@ -99,10 +103,10 @@ if __name__ == "__main__":
         fusion_keyword_before_after = False,
         tesseract_cmd = "/usr/local/bin/tesseract",
         use_tesseract = False,
+        use_full_tesseract = False,
         lang_OCR_tesseract = 'fra',
         input_path = "/path/to/fichiers_entre",
-        output_path = "/path/to/resultats",
-        poppler_path = ""
+        output_path = "/path/to/resultats"
     )
 
 ```
@@ -122,10 +126,10 @@ if __name__ == "__main__":
 - `fusion_keyword_before_after`: This boolean parameter controls whether the function should avoid including redundant phrases when a keyword appears multiple times within close proximity in the text. When set to `True`, the function ensures that phrases surrounding a keyword are only extracted once, even if they overlap with the phrases surrounding another occurrence of the same keyword. This prevents the repetition of phrases in the final output, leading to a more concise result. If set to `False`, the function will extract all phrases surrounding each occurrence of the keyword, which may lead to redundancy if the keyword appears frequently in the text. (default value: `False`)
 - `tesseract_cmd`: Path to the Tesseract executable (default value: `"/usr/local/bin/tesseract"`).
 - `use_tesseract`: This boolean parameter controls whether to use Tesseract OCR for processing images within the documents. When set to `True`, the function will extract text from images using Tesseract OCR, which is useful if the documents contain scanned images or embedded pictures with text. Ensure that `tesseract_cmd` is correctly set to the path of the Tesseract executable. If set to `False`, the function will ignore images in the documents and only process the text that is directly extractable without OCR. This can be faster and avoids the need to install Tesseract. (default value: `False`)
+- `use_full_tesseract`: This boolean parameter controls whether to apply Tesseract OCR to the entire page of the document. When enabled, the entire page is converted into an image, and Tesseract is used to extract text from the entire image. This results in more accurate text extraction and preserves the document's structure, but it is more computationally intensive. If only `use_tesseract` is enabled without `use_full_tesseract`, Tesseract will only extract text from specific images on the page, rather than the entire page. (default value: `False`)
 - `lang_OCR_tesseract`: Language code used by Tesseract OCR to identify the language of the text to be extracted from images. You can specify other language codes supported by Tesseract depending on the language of the text in the images. For a complete list of supported languages and their codes, you can consult the [official Tesseract documentation](https://github.com/tesseract-ocr/tesseract/blob/main/doc/tesseract.1.asc#languages). (default value: `fra`)
 - `input_path`: Path to the folder containing the files to be processed.
 - `output_path`: Path to the folder where the results will be saved.
-- `poppler_path`: You need to install Poppler by following the instructions on this [link](https://pdf2image.readthedocs.io/en/latest/installation.html). After installing Poppler, specify the path to the `bin` directory inside the Poppler installation using the `poppler_path` argument in your code. This ensures the library can access the necessary binaries to process PDFs correctly, especially on systems where Poppler isn't in the system's PATH. On macOS, in most cases, you can set `poppler_path` to `/usr/local/opt/poppler/bin`.
 
 
 
@@ -204,10 +208,10 @@ if __name__ == "__main__":
         fusion_keyword_before_after = False,
         tesseract_cmd = "/usr/local/bin/tesseract",
         use_tesseract = False,
+        use_full_tesseract = False,
         lang_OCR_tesseract = 'fra',
         input_path = "/path/to/fichiers_entre",
-        output_path = "/path/to/resultats",
-        poppler_path = ""
+        output_path = "/path/to/resultats"
     )
 ```
 
@@ -226,10 +230,10 @@ if __name__ == "__main__":
 - `fusion_keyword_before_after` : Ce paramètre booléen contrôle si la fonction doit éviter d'inclure des phrases redondantes lorsque un mot-clé apparaît plusieurs fois à proximité dans le texte. Lorsqu'il est défini sur `True`, la fonction garantira que les phrases entourant un mot-clé sont extraites une seule fois, même si elles chevauchent les phrases entourant une autre occurrence du même mot-clé. Cela empêche la répétition de phrases dans le résultat final, conduisant à un résultat plus concis. Si défini sur `False`, la fonction extraira toutes les phrases entourant chaque occurrence du mot-clé, ce qui peut conduire à une redondance si le mot-clé apparaît fréquemment dans le texte. (valeur par défaut : `False`)
 - `tesseract_cmd` : Chemin vers l'exécutable Tesseract (valeur par défaut : `"/usr/local/bin/tesseract"`).
 - `use_tesseract` : Ce paramètre booléen détermine si l'on doit utiliser Tesseract OCR pour traiter les images dans les documents. Lorsqu'il est défini sur `True`, la fonction extraira le texte des images en utilisant Tesseract OCR, ce qui est utile si les documents contiennent des images scannées ou des images intégrées avec du texte. Assurez-vous que `tesseract_cmd` est correctement configuré pour pointer vers le chemin de l'exécutable Tesseract. Si le paramètre est défini sur `False`, la fonction ignorera les images dans les documents et traitera uniquement le texte directement extractible sans OCR. Cela peut être plus rapide et évite la nécessité d'installer Tesseract. (valeur par défaut : `False`)
+- `use_full_tesseract` : Ce paramètre booléen contrôle si Tesseract OCR doit être appliqué à l'ensemble de la page du document. Lorsqu'il est activé, la page entière est convertie en image, et Tesseract est utilisé pour extraire le texte de l'image complète. Cela permet une extraction de texte plus précise et préserve la structure du document, mais cela est plus intensif en termes de calcul. Si seul `use_tesseract` est activé sans `use_full_tesseract`, Tesseract n'extraira le texte que des images spécifiques sur la page, plutôt que de la page entière. (valeur par défaut : `False`)
 - `lang_OCR_tesseract`: Code de langue utilisé par Tesseract OCR pour identifier la langue du texte à extraire des images. Par défaut, ce paramètre est réglé sur `'fra'` pour le français. Vous pouvez spécifier d'autres codes de langue pris en charge par Tesseract selon la langue du texte dans les images. Pour une liste complète des langues et de leurs codes supportés par Tesseract, vous pouvez consulter la [documentation officielle de Tesseract](https://github.com/tesseract-ocr/tesseract/blob/main/doc/tesseract.1.asc#languages).
 - `input_path` : Chemin vers le dossier contenant les fichiers à traiter.
 - `output_path` : Chemin vers le dossier où les résultats seront enregistrés.
-- `poppler_path` : Vous devez installer Poppler en suivant les instructions de ce [lien](https://pdf2image.readthedocs.io/en/latest/installation.html). Après avoir installé Poppler, spécifiez le chemin vers le répertoire `bin` à l'intérieur de l'installation de Poppler en utilisant l'argument `poppler_path` dans votre code. Cela permet à la bibliothèque d'accéder aux binaires nécessaires pour traiter correctement les fichiers PDF, surtout sur les systèmes où Poppler n'est pas dans le `PATH` du système. Sur macOS, vous pouvez généralement définir `poppler_path` sur `/usr/local/opt/poppler/bin`.
 
 ## Sorties
 

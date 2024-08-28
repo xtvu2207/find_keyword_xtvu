@@ -33,7 +33,6 @@ spacy = install_and_import('spacy')
 pytesseract = install_and_import('pytesseract')
 PIL = install_and_import('Pillow', 'PIL')
 openpyxl = install_and_import('openpyxl')
-pdf2image = install_and_import('pdf2image')
 pandoc = install_and_import('pandoc')
 pypandoc = install_and_import('pypandoc')
 reportlab = install_and_import('reportlab')
@@ -43,7 +42,6 @@ scipy = install_and_import("scipy")
 from scipy.spatial.distance import cosine
 from collections import defaultdict
 from docx import Document
-from pdf2image import convert_from_bytes
 from reportlab.lib.pagesizes import A4
 from reportlab.lib.units import inch
 from reportlab.lib.styles import getSampleStyleSheet
@@ -110,8 +108,6 @@ def init_nlp(language_prefix):
             logging.error(f"{RED}Unable to load a language model for '{language_prefix}' and the fallback model '{fallback_model}'.{RESET}")
             sys.exit(1)
 
-def compter_mots(phrase):
-    return len(phrase.split())
 
 
 def compter_occurrences_mot_cle(phrase, mots_cles, nlp, exact_match):
@@ -205,7 +201,7 @@ def extraire_ocr_des_images(page, bbox, pytesseract,lang_OCR_tesseract):
     RESET = '\033[0m'
 
     try:
-        image_page = page.to_image(resolution=300).original
+        image_page = page.to_image(resolution=500).original
         width, height = image_page.size
         x0, y0, x1, y1 = bbox
         x0, y0, x1, y1 = max(0, x0), max(0, y0), min(x1, width), min(y1, height)
@@ -293,32 +289,37 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
 
 
 
-def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match, phrase_incomplete):
+def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract, lang_OCR_tesseract, exact_match, phrase_incomplete, use_full_tesseract):
     RED = '\033[91m'
     RESET = '\033[0m'
 
     data = []
     pages_problematiques = []
     logging.info(f"Processing page {num_page} of file {fichier} in folder {id_dossier}")
+    
     try:
-        blocs_texte = extraire_blocs_texte(page)
-        
-        if use_tesseract:
-            for img in page.images:
-                x0, y0, x1, y1 = img["x0"], img["top"], img["x1"], img["bottom"]
-                texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract,lang_OCR_tesseract)
-                if texte_ocr:
-                    blocs_texte.append({
-                        'x0': x0,
-                        'top': y0,
-                        'x1': x1,
-                        'bottom': y1,
-                        'text': texte_ocr
-                    })
-            blocs_texte.sort(key=lambda x: (x['top'], x['x0']))
+        if use_tesseract and use_full_tesseract:
+            image_page = page.to_image(resolution=500).original
+            texte_complet = effectuer_ocr(image_page, pytesseract, lang_OCR_tesseract)
+        else:
+            blocs_texte = extraire_blocs_texte(page)
 
-        texte_complet = " ".join([bloc['text'] for bloc in blocs_texte])
-        
+            if use_tesseract:
+                for img in page.images:
+                    x0, y0, x1, y1 = img["x0"], img["top"], img["x1"], img["bottom"]
+                    texte_ocr = extraire_ocr_des_images(page, (x0, y0, x1, y1), pytesseract, lang_OCR_tesseract)
+                    if texte_ocr:
+                        blocs_texte.append({
+                            'x0': x0,
+                            'top': y0,
+                            'x1': x1,
+                            'bottom': y1,
+                            'text': texte_ocr
+                        })
+                blocs_texte.sort(key=lambda x: (x['top'], x['x0']))
+
+            texte_complet = " ".join([bloc['text'] for bloc in blocs_texte])
+
         if phrase_incomplete:
             texte_complet = phrase_incomplete + " " + texte_complet
         if texte_complet and not texte_complet.strip().endswith(('.', '!', '?')):
@@ -327,12 +328,12 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
             texte_complet = " ".join([phrase.text for phrase in phrases])
         else:
             phrase_incomplete = ""
+
         if texte_complet:
             for mot_clé in keywords:
-                phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after,exact_match)
+                phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match)
                 mot_clé_str = ', '.join(mot_clé) if isinstance(mot_clé, list) else mot_clé
                 for phrase in phrases:
-                    
                     data.append({
                         'PDF_Folder': id_dossier,
                         'PDF_Document': fichier,
@@ -344,11 +345,11 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
     except Exception as e:
         logging.error(f"{RED}Error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
         pages_problematiques.append(num_page)
+    
     return data, pages_problematiques, phrase_incomplete
 
 
-
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, poppler_path,lang_OCR_tesseract,exact_match):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, lang_OCR_tesseract, exact_match, use_full_tesseract):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -384,19 +385,18 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
             with open(chemin_pdf, "rb") as f:
                 pdf_bytes = f.read()
 
-        images = convert_from_bytes(pdf_bytes, poppler_path = poppler_path)
-        for num_page, image in enumerate(images, start=1):
-            with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
-                page = pdf.pages[num_page - 1]
+        with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
+            for num_page in range(len(pdf.pages)):
+                page = pdf.pages[num_page]
                 with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract,lang_OCR_tesseract,exact_match, phrase_incomplete)
+                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page + 1, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract, lang_OCR_tesseract, exact_match, phrase_incomplete, use_full_tesseract)
                     try:
-                        page_data, problematic_pages,phrase_incomplete = future.result(timeout=timeout)
+                        page_data, problematic_pages, phrase_incomplete = future.result(timeout=timeout)
                         data.extend(page_data)
                         pages_problematiques.extend(problematic_pages)
                     except Exception as e:
-                        logging.error(f"{RED}Timeout or error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
-                        pages_problematiques.append(num_page)
+                        logging.error(f"{RED}Timeout or error processing page {num_page + 1} of file {fichier}: {str(e)}{RESET}")
+                        pages_problematiques.append(num_page + 1)
     except Exception as e:
         logging.error(f"{RED}Error opening file {chemin_pdf}: {str(e)}{RESET}")
         return None, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)}
@@ -407,6 +407,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     
     data.sort(key=lambda x: x['Page_Number'])
     return data, None
+
 
 def nettoyer_donnees(dataframe):
     def clean_cell(cell):
@@ -523,6 +524,7 @@ def find_keyword_xtvu(
     fusion_keyword_before_after=False,
     tesseract_cmd="",
     use_tesseract=False,
+    use_full_tesseract = False,
     lang_OCR_tesseract = "fra",  
     input_path="/path/to/input",
     output_path="/path/to/output",
@@ -549,10 +551,7 @@ def find_keyword_xtvu(
     if use_tesseract and not tesseract_cmd:
         logging.error(f"{RED}You chose to use pytesseract, but you didn't provide a Tesseract path. Please provide a Tesseract path or set use_tesseract to False if you don't want to use pytesseract.{RESET}")
         sys.exit(1)
-    if not poppler_path:
-        logging.error(f"{RED}The Poppler path (poppler_path) is invalid or not defined. Please ensure that Poppler is installed and the path to the 'bin' directory is correctly set.{RESET}")
-        sys.exit(1)
-
+        
     if threads_rest == None:        
         max_threads = os.cpu_count()//2
     else :
@@ -595,7 +594,8 @@ def find_keyword_xtvu(
             pdf_files.append((chemin_pdf, id_dossier, fichier))
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,poppler_path,lang_OCR_tesseract,exact_match): pdf_file for pdf_file in pdf_files}
+        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,lang_OCR_tesseract,
+                                   exact_match,use_full_tesseract): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:
