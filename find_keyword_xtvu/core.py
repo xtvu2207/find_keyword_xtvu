@@ -223,12 +223,12 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
         if exact_match:
             mot_clé_pattern = re.compile(rf'\b({"|".join(re.escape(mot.lower()) for mot in mot_clé)})\b')
         else:
-            mot_clé_lemme = [nlp(mot)[0].lemma_.lower() for mot in mot_clé]
+            mot_clé_lemme = [" ".join([token.lemma_.lower() for token in nlp(mot)]) for mot in mot_clé]
     else:   
         if exact_match:
             mot_clé_pattern = re.compile(rf'\b{re.escape(mot_clé.lower())}\b')
         else:
-            mot_clé_lemme = nlp(mot_clé)[0].lemma_.lower()
+            mot_clé_lemme = " ".join([token.lemma_.lower() for token in nlp(mot_clé)])
 
     dernier_extrait = None  
 
@@ -244,11 +244,11 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
         return 1 - cosine(vec_a, vec_b)
 
     for i, sent in enumerate(phrases):
-        phrase_mots_clee_actuelle = sent.text
+        phrase_mots_clee_actuelle = sent.text.lower()
 
         if exact_match:
             if isinstance(mot_clé, list):   
-                if mot_clé_pattern.search(phrase_mots_clee_actuelle.lower()):
+                if mot_clé_pattern.search(phrase_mots_clee_actuelle):
                     extrait_actuel = ajouter_extrait(i)
                     if fusion_keyword_before_after:
                         if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
@@ -257,7 +257,7 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
                     else:
                         phrases_avec_contexte.append(extrait_actuel)
             else:   
-                if mot_clé_pattern.search(phrase_mots_clee_actuelle.lower()):
+                if mot_clé_pattern.search(phrase_mots_clee_actuelle):
                     extrait_actuel = ajouter_extrait(i)
                     if fusion_keyword_before_after:
                         if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
@@ -267,7 +267,7 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
                         phrases_avec_contexte.append(extrait_actuel)
         else:
             if isinstance(mot_clé, list):  
-                if any(token.lemma_.lower() in mot_clé_lemme for token in sent):
+                if any(mot in phrase_mots_clee_actuelle for mot in mot_clé_lemme):
                     extrait_actuel = ajouter_extrait(i)
                     if fusion_keyword_before_after:
                         if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
@@ -276,7 +276,7 @@ def extraire_phrases(texte, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, f
                     else:
                         phrases_avec_contexte.append(extrait_actuel)
             else:   
-                if any(token.lemma_.lower() == mot_clé_lemme for token in sent):
+                if mot_clé_lemme in phrase_mots_clee_actuelle:
                     extrait_actuel = ajouter_extrait(i)
                     if fusion_keyword_before_after:
                         if dernier_extrait is None or similarite_semantique(dernier_extrait, extrait_actuel) < 0.95:
