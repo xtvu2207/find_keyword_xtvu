@@ -618,7 +618,7 @@ def find_keyword_xtvu(
         tables_contingence = generer_tables_contingence(data, nlp,fusion_keyword_before_after=fusion_keyword_before_after,exact_match=exact_match)
         enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
     else:
-        logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords ={RESET}")
+        logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords :-){RESET}")
         sys.exit(1)
 
     df = pd.DataFrame(data, columns=['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Occurrences_Of_Keyword_In_Phrases', 'Info'])
