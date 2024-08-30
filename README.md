@@ -1,7 +1,8 @@
+## ✨ What's New in Version 5.6.9
+- **🆕 Enhanced Keyword Frequency Tracking**: In this update, I have introduced additional columns to the results DataFrame when the `fusion_keyword_before_after` argument is set to `True`. These columns represent the frequency of each keyword found in the analyzed phrases, offering more detailed insights into keyword occurrences. These new frequency columns are automatically appended after the `Info` column.
 ## ✨ What's New in Version 5.6.8
 - **❗Important Change to Argument**: To simplify the requirements of this library, I have decided to remove the dependency on **Poppler**. Now, you don’t need to download Poppler to use this library. This change simplifies the process for the average user.
 - **🆕 New Argument `use_full_tesseract`**: This new argument allows you to decide whether to apply Tesseract to the entire document. This option enables us to extract text while maintaining the structure of the text, which is beneficial for users with high-performance computers.
-
 ## ✨ What's New in Version 5.6.7
 - **🔧 Bug Fix**: Fixed the error in generating contingency tables and calculating occurrences of keywords in a sentence.
 ## ✨ What's New in Version 5.6.6
