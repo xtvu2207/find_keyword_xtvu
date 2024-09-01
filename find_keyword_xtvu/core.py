@@ -39,6 +39,10 @@ reportlab = install_and_import('reportlab')
 tempfile = install_and_import('tempfile')
 collections = install_and_import('collections')
 scipy = install_and_import("scipy")
+json = install_and_import("json")
+multiprocessing = install_and_import("multiprocessing")
+
+from multiprocessing import Lock
 from scipy.spatial.distance import cosine
 from collections import defaultdict
 from docx import Document
@@ -108,6 +112,46 @@ def init_nlp(language_prefix):
             logging.error(f"{RED}Unable to load a language model for '{language_prefix}' and the fallback model '{fallback_model}'.{RESET}")
             sys.exit(1)
 
+
+
+json_lock = Lock()
+
+
+def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page):
+    document_info = {
+        'PDF_Folder': id_dossier,
+        'PDF_Document': fichier,
+        'Page_Number': num_page,
+        'Text': texte_page 
+    }
+
+    with json_lock:
+ 
+        if os.path.exists(cache_file_path):
+            with open(cache_file_path, 'r', encoding='utf-8') as f:
+                data = json.load(f)
+        else:
+            data = {}
+
+        key = f"{id_dossier}_{fichier}"
+        if key not in data:
+            data[key] = []
+
+ 
+        if num_page not in [entry['Page_Number'] for entry in data[key]]:
+            data[key].append(document_info)
+        else:
+            for entry in data[key]:
+                if entry['Page_Number'] == num_page:
+                    entry['Text'] = texte_page
+
+ 
+        with tempfile.NamedTemporaryFile('w', delete=False, dir=os.path.dirname(cache_file_path), encoding='utf-8') as temp_file:
+            json.dump(data, temp_file, ensure_ascii=False, indent=4)
+            temp_file_path = temp_file.name
+
+ 
+        os.replace(temp_file_path, cache_file_path)
 
 
 def compter_occurrences_mot_cle(phrase, mots_cles, nlp, exact_match):
@@ -355,11 +399,44 @@ def traiter_page(page, id_dossier, fichier, num_page, keywords, nb_phrases_avant
         logging.error(f"{RED}Error processing page {num_page} of file {fichier}: {str(e)}{RESET}")
         pages_problematiques.append(num_page)
     
-    return data, pages_problematiques, phrase_incomplete
+    return data, pages_problematiques, phrase_incomplete, texte_complet
+
+def traiter_page_from_text(texte_complet, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match):
+    data = []
+    pages_problematiques = []
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
+    try:
+        for mot_clé in keywords:
+            phrases = extraire_phrases(texte_complet, mot_clé, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match)
+            mot_clé_str = ', '.join(mot_clé) if isinstance(mot_clé, list) else mot_clé
+            for phrase in phrases:
+                result_entry = {
+                    'PDF_Folder': id_dossier,
+                    'PDF_Document': fichier,
+                    'Page_Number': num_page,
+                    'Keywords_Found': mot_clé_str,
+                    'Occurrences_Of_Keyword_In_Phrases': compter_occurrences_mot_cle(phrase, mot_clé, nlp, exact_match),
+                    'Info': phrase
+                }
+                if fusion_keyword_before_after:
+                    for keyword_group in keywords:
+                        if isinstance(keyword_group, list):
+                            for keyword in keyword_group:
+                                result_entry[keyword] = compter_occurrences_mot_cle(phrase, keyword, nlp, exact_match)
+                        else:
+                            result_entry[keyword_group] = compter_occurrences_mot_cle(phrase, keyword_group, nlp, exact_match)
+
+                data.append(result_entry)
+    except Exception as e:
+        logging.error(f"{RED}Error processing text for page {num_page} of file {fichier}: {str(e)}{RESET}")
+        pages_problematiques.append(num_page)
+
+    return data, pages_problematiques
 
 
-
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, lang_OCR_tesseract, exact_match, use_full_tesseract):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, lang_OCR_tesseract, exact_match, use_full_tesseract, cache_file_path):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -376,47 +453,81 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     logging.info(f"Processing file {fichier} in folder {id_dossier}")
     data = []
     pages_problematiques = []
-    
-    phrase_incomplete = ""
-    
-    try:
-        if chemin_pdf.endswith(('.rtf', '.odt')):
-            docx_buffer = convertir_en_docx_in_memory(chemin_pdf, pypandoc)
-            if docx_buffer is None:
-                raise Exception(f"{RED}Error converting file {fichier} to DOCX{RESET}")
-            pdf_bytes = convertir_docx_en_pdf_en_memoire(docx_buffer)
-            if pdf_bytes is None:
-                raise Exception(f"{RED}Error converting DOCX file in memory{RESET}")
-        elif chemin_pdf.endswith('.docx'):
-            pdf_bytes = convertir_docx_en_pdf_en_memoire(chemin_pdf)
-            if pdf_bytes is None:
-                raise Exception(f"{RED}Error converting DOCX file {chemin_pdf}{RESET}")
-        else:
-            with open(chemin_pdf, "rb") as f:
-                pdf_bytes = f.read()
 
-        with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
-            for num_page in range(len(pdf.pages)):
-                page = pdf.pages[num_page]
-                with ThreadPoolExecutor(max_workers=1) as page_executor:
-                    future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page + 1, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract, lang_OCR_tesseract, exact_match, phrase_incomplete, use_full_tesseract)
-                    try:
-                        page_data, problematic_pages, phrase_incomplete = future.result(timeout=timeout)
-                        data.extend(page_data)
-                        pages_problematiques.extend(problematic_pages)
-                    except Exception as e:
-                        logging.error(f"{RED}Timeout or error processing page {num_page + 1} of file {fichier}: {str(e)}{RESET}")
-                        pages_problematiques.append(num_page + 1)
-    except Exception as e:
-        logging.error(f"{RED}Error opening file {chemin_pdf}: {str(e)}{RESET}")
-        return None, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)}
-    
+    texte_complet_document = []
+
+    if not cache_file_path:
+        texte_sauvegarde = {}
+    else:
+        if os.path.exists(cache_file_path):
+            with open(cache_file_path, 'r', encoding='utf-8') as f:
+                texte_sauvegarde = json.load(f)
+        else:
+            texte_sauvegarde = {}
+
+    key = f"{id_dossier}_{fichier}"
+
+    if key in texte_sauvegarde:
+        logging.info(f"Using saved text for file {fichier}")
+        for page_info in texte_sauvegarde[key]:
+            num_page = page_info['Page_Number']
+            texte_complet = page_info['Text']
+
+            page_data, problematic_pages = traiter_page_from_text(
+                texte_complet, id_dossier, fichier, num_page, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, exact_match
+            )
+
+            data.extend(page_data)
+            pages_problematiques.extend(problematic_pages)
+    else:
+        phrase_incomplete = ""
+        try:
+            if chemin_pdf.endswith(('.rtf', '.odt')):
+                docx_buffer = convertir_en_docx_in_memory(chemin_pdf, pypandoc)
+                if docx_buffer is None:
+                    raise Exception(f"{RED}Error converting file {fichier} to DOCX{RESET}")
+                pdf_bytes = convertir_docx_en_pdf_en_memoire(docx_buffer)
+                if pdf_bytes is None:
+                    raise Exception(f"{RED}Error converting DOCX file in memory{RESET}")
+            elif chemin_pdf.endswith('.docx'):
+                pdf_bytes = convertir_docx_en_pdf_en_memoire(chemin_pdf)
+                if pdf_bytes is None:
+                    raise Exception(f"{RED}Error converting DOCX file {chemin_pdf}{RESET}")
+            else:
+                with open(chemin_pdf, "rb") as f:
+                    pdf_bytes = f.read()
+
+            with pdfplumber.open(BytesIO(pdf_bytes)) as pdf:
+                for num_page in range(len(pdf.pages)):
+                    page = pdf.pages[num_page]
+                    with ThreadPoolExecutor(max_workers=1) as page_executor:
+                        future = page_executor.submit(traiter_page, page, id_dossier, fichier, num_page + 1, keywords, nb_phrases_avant, nb_phrases_apres, nlp, pytesseract, fusion_keyword_before_after, use_tesseract, lang_OCR_tesseract, exact_match, phrase_incomplete, use_full_tesseract)
+                        try:
+                            page_data, problematic_pages, phrase_incomplete, texte_complet = future.result(timeout=timeout)
+
+                            data.extend(page_data)
+                            pages_problematiques.extend(problematic_pages)
+                            texte_complet_document.append((num_page + 1, texte_complet)) 
+                        except Exception as e:
+                            logging.error(f"{RED}Timeout or error processing page {num_page + 1} of file {fichier}: {str(e)}{RESET}")
+                            pages_problematiques.append(num_page + 1)
+
+                if cache_file_path:
+                    for num_page, texte_page in texte_complet_document:
+                        sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page)
+
+        except Exception as e:
+            logging.error(f"{RED}Error opening file {chemin_pdf}: {str(e)}{RESET}")
+            return None, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)}
+
     if pages_problematiques:
         issue_description = f'Timeout or error on pages {", ".join(map(str, pages_problematiques))}'
         return data, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': issue_description}
-    
+
     data.sort(key=lambda x: x['Page_Number'])
     return data, None
+
+
 
 
 def nettoyer_donnees(dataframe):
@@ -538,7 +649,8 @@ def find_keyword_xtvu(
     lang_OCR_tesseract = "fra",  
     input_path="/path/to/input",
     output_path="/path/to/output",
-    poppler_path = ""
+    poppler_path = "",
+    cache_file_path="/path/to/json_file.json"  
 ):
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -561,6 +673,19 @@ def find_keyword_xtvu(
     if use_tesseract and not tesseract_cmd:
         logging.error(f"{RED}You chose to use pytesseract, but you didn't provide a Tesseract path. Please provide a Tesseract path or set use_tesseract to False if you don't want to use pytesseract.{RESET}")
         sys.exit(1)
+    if not cache_file_path:
+        logging.warning(f"{YELLOW}No path provided for the cache file. Text documents will not be saved for future use.{RESET}")
+    else:
+        json_dir = os.path.dirname(cache_file_path)
+        if not os.path.exists(json_dir):
+            try:
+                os.makedirs(json_dir)
+                logging.info(f"{GREEN}Directory created for the cache file: {json_dir}{RESET}")
+            except Exception as e:
+                logging.error(f"{RED}Failed to create directory for cache file: {str(e)}. Text documents will not be saved for future use.{RESET}")
+                cache_file_path = ""  
+
+
         
     if threads_rest == None:        
         max_threads = os.cpu_count()//2
@@ -605,7 +730,7 @@ def find_keyword_xtvu(
     
     with ProcessPoolExecutor(max_workers=max_threads) as executor:
         futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,lang_OCR_tesseract,
-                                   exact_match,use_full_tesseract): pdf_file for pdf_file in pdf_files}
+                                   exact_match,use_full_tesseract, cache_file_path): pdf_file for pdf_file in pdf_files}
         for future in as_completed(futures):
             pdf_file = futures[future]
             try:

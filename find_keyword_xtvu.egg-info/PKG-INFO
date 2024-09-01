@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: find_keyword_xtvu
-Version: 5.6.9
+Version: 5.7rc1
 Summary: A package to find keywords in .pdf, .docx, .odt, and .rtf files, with support for multiple languages and the ability to run on multiple CPU cores
 Author: Xuan Tung VU
 Classifier: Programming Language :: Python :: 3
@@ -29,6 +29,8 @@ Requires-Dist: requests
 Requires-Dist: packaging
 Requires-Dist: setuptools>=40.0.0
 
+## ✨ What's New in Version 5.7
+- **🆕 Enhanced PDF Processing with the new `json_file_path` argument**: This update introduces a powerful feature that optimizes document processing through JSON-based caching. When a `json_file_path` is provided, the function first checks whether the extracted text data for the file is already stored in the JSON cache. If the data is found, the function skips the extraction process, significantly speeding up the analysis.
 ## ✨ What's New in Version 5.6.9
 - **🆕 Enhanced Keyword Frequency Tracking**: In this update, I have introduced additional columns to the results DataFrame when the `fusion_keyword_before_after` argument is set to `True`. These columns represent the frequency of each keyword found in the analyzed phrases, offering more detailed insights into keyword occurrences. These new frequency columns are automatically appended after the `Info` column.
 ## ✨ What's New in Version 5.6.8
@@ -138,7 +140,8 @@ if __name__ == "__main__":
         use_full_tesseract = False,
         lang_OCR_tesseract = 'fra',
         input_path = "/path/to/fichiers_entre",
-        output_path = "/path/to/resultats"
+        output_path = "/path/to/resultats",
+        cache_file_path = "/path/to/json_file.json"  
     )
 
 ```
@@ -162,7 +165,7 @@ if __name__ == "__main__":
 - `lang_OCR_tesseract`: Language code used by Tesseract OCR to identify the language of the text to be extracted from images. You can specify other language codes supported by Tesseract depending on the language of the text in the images. For a complete list of supported languages and their codes, you can consult the [official Tesseract documentation](https://github.com/tesseract-ocr/tesseract/blob/main/doc/tesseract.1.asc#languages). (default value: `fra`)
 - `input_path`: Path to the folder containing the files to be processed.
 - `output_path`: Path to the folder where the results will be saved.
-
+- `cache_file_path`: Path to the location where the JSON file will be created to store the cache of processed documents. This cache file significantly reduces the processing time when the same document is processed multiple times in future runs. If this parameter is not provided or if the path is invalid, the function will not save any cache, and the processing time will be longer as it will need to reprocess the document each time.
 
 
 ## Outputs
@@ -243,7 +246,8 @@ if __name__ == "__main__":
         use_full_tesseract = False,
         lang_OCR_tesseract = 'fra',
         input_path = "/path/to/fichiers_entre",
-        output_path = "/path/to/resultats"
+        output_path = "/path/to/resultats",
+        cache_file_path = "/path/to/json_file.json"  
     )
 ```
 
@@ -266,6 +270,8 @@ if __name__ == "__main__":
 - `lang_OCR_tesseract`: Code de langue utilisé par Tesseract OCR pour identifier la langue du texte à extraire des images. Par défaut, ce paramètre est réglé sur `'fra'` pour le français. Vous pouvez spécifier d'autres codes de langue pris en charge par Tesseract selon la langue du texte dans les images. Pour une liste complète des langues et de leurs codes supportés par Tesseract, vous pouvez consulter la [documentation officielle de Tesseract](https://github.com/tesseract-ocr/tesseract/blob/main/doc/tesseract.1.asc#languages).
 - `input_path` : Chemin vers le dossier contenant les fichiers à traiter.
 - `output_path` : Chemin vers le dossier où les résultats seront enregistrés.
+- `cache_file_path` : Chemin vers l'emplacement où sera créé le fichier JSON pour stocker le cache des documents traités. Ce fichier de cache permet de réduire de manière significative le temps de traitement lorsque le même document est traité plusieurs fois lors de futures exécutions. Si ce paramètre n'est pas fourni ou si le chemin est invalide, la fonction ne sauvegardera aucun cache, ce qui entraînera un temps de traitement plus long, car le document devra être retraité à chaque exécution.
+
 
 ## Sorties
 
