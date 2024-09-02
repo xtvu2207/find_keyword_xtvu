@@ -46,7 +46,6 @@ shutil = install_and_import("shutil")
 
 
 from filelock import FileLock
-from multiprocessing import Lock
 from scipy.spatial.distance import cosine
 from collections import defaultdict
 from docx import Document

@@ -1,56 +1,36 @@
-## ✨ What's New in Version 5.7
+# 📄 Table of Contents
+
+- [🔥 Recent Updates](#-recent-updates)
+    - [✨ What's New in Version 5.7](#-whats-new-in-version-57)
+    - [✨ What's New in Version 5.6.9](#-whats-new-in-version-569)
+    - [✨ What's New in Version 5.6.8](#-whats-new-in-version-568)
+- [English version](#english-version)
+    - [Installation](#installation)
+    - [Directory Structure](#directory-structure)
+    - [Usage](#usage)
+    - [Arguments](#arguments)
+    - [Outputs](#outputs)
+    - [Contribution](#contribution)
+    - [License](#license)
+- [Version Française](#version-française)
+    - [Installation](#installation-1)
+    - [Structure du Répertoire](#structure-du-répertoire)
+    - [Utilisation](#utilisation)
+    - [Arguments](#arguments-1)
+    - [Sorties](#sorties)
+- [📜 Older Updates](#-older-updates)
+
+# 🔥 Recent Updates
+### ✨ What's New in Version 5.7
 - **🆕 Enhanced PDF Processing with the new `json_file_path` argument**: This update introduces a powerful feature that optimizes document processing through JSON-based caching. When a `json_file_path` is provided, the function first checks whether the extracted text data for the file is already stored in the JSON cache. If the data is found, the function skips the extraction process, significantly speeding up the analysis. If not, the function will proceed with the extraction, save the resulting data to the JSON cache, and ensure that future analyses of the same file are much faster.
-## ✨ What's New in Version 5.6.9
+### ✨ What's New in Version 5.6.9
 - **🆕 Enhanced Keyword Frequency Tracking**: In this update, I have introduced additional columns to the results DataFrame when the `fusion_keyword_before_after` argument is set to `True`. These columns represent the frequency of each keyword found in the analyzed phrases, offering more detailed insights into keyword occurrences. These new frequency columns are automatically appended after the `Info` column.
-## ✨ What's New in Version 5.6.8
+### ✨ What's New in Version 5.6.8
 - **❗Important Change to Argument**: To simplify the requirements of this library, I have decided to remove the dependency on **Poppler**. Now, you don’t need to download Poppler to use this library. This change simplifies the process for the average user.
 - **🆕 New Argument `use_full_tesseract`**: This new argument allows you to decide whether to apply Tesseract to the entire document. This option enables us to extract text while maintaining the structure of the text, which is beneficial for users with high-performance computers.
-## ✨ What's New in Version 5.6.7
-- **🔧 Bug Fix**: Fixed the error in generating contingency tables and calculating occurrences of keywords in a sentence.
-## ✨ What's New in Version 5.6.6
-- **🚀 Enhanced Keyword Processing**: The library now supports the identification and handling of synonymous keywords. You can search for individual keywords or groups of synonymous keywords, and they will all be treated equivalently, ensuring a more flexible and accurate search process.
-## ✨ What's New in Version 5.6.4
-- **🚀 Improvement in the way documents are read**: Enhanced the document reading methods to produce more accurate results.
-
-## ✨ What's New in Version 5.6.2
-- **🆕 New argument `exact_match`**: Enables precise matching of the keyword during text extraction. If set to `False`, the matching will be based on the lemma form, allowing for more flexible searches and capturing different forms of the word.
-- **🆕 New modification to `threads_rest`**: To prevent potential blocking on certain computers, the default number of cores used by this code is now set to **half of the available cores**, ensuring smoother operation without overloading the system. ***If your computer is lagging significantly, you may want to increase this number to help resolve the issue.***
-## 🛠️ What's New in Version 5.6.1
-- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
-
-## ✨ What's New in Version 5.6
-- **🆕 New argument `lang_OCR_tesseract`**: Add the ability to specify the language of the Tesseract OCR model for extracting text from images.
-
-## 🛠️ What's New in Version 5.5.9
-- **🔧 Bug Fix with `poppler_path`**: Solves the issue with "Unable to get page count. Is poppler installed and in PATH?" by allowing you to specify the Poppler installation path.
-
-## ✨ What's New in Version 5.5.8
-- **🆕 New argument `use_tesseract`**: Adds an option to use Tesseract OCR for extracting text from images within documents. When set to `False`, only text is processed without OCR.
-
-## 🛠️ What's New in Version 5.5.7
-- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
-
-## 🛠️ What's New in Version 5.5.6
-- **🔧 Bug Fix**: Resolved the `tesseract` not found issue.
-- **🔄 Update**: All log messages are now standardized in English.
-
-## 🛠️ What's New in Version 5.5.5
-- **🔧 Bug Fix**: Corrected an issue with calculating contingency tables of keyword frequency when `fusion_keyword_before_after = True`.
-
-## 🛠️ What's New in Version 5.5.4
-- **🔧 Bug fix**: Fixed an issue where some document names couldn't be read correctly.
-- **🆕 New argument `fusion_keyword_before_after`**: Introduces the ability to merge phrases to avoid redundancy in the results.
-
-## 🌍 What's New in Version 5.5.2
-- **🌐 Multilingual Support**: This version now includes support for multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
 
 # English version
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
-
-
-
-
-
 
 ## Installation
 
@@ -263,3 +243,46 @@ Les contributions sont les bienvenues ! Si vous souhaitez améliorer ce projet o
 ## Licence
 
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
+
+
+# 📜 Older Updates
+
+## ✨ What's New in Version 5.6.7
+- **🔧 Bug Fix**: Fixed the error in generating contingency tables and calculating occurrences of keywords in a sentence.
+## ✨ What's New in Version 5.6.6
+- **🚀 Enhanced Keyword Processing**: The library now supports the identification and handling of synonymous keywords. You can search for individual keywords or groups of synonymous keywords, and they will all be treated equivalently, ensuring a more flexible and accurate search process.
+## ✨ What's New in Version 5.6.4
+- **🚀 Improvement in the way documents are read**: Enhanced the document reading methods to produce more accurate results.
+
+## ✨ What's New in Version 5.6.2
+- **🆕 New argument `exact_match`**: Enables precise matching of the keyword during text extraction. If set to `False`, the matching will be based on the lemma form, allowing for more flexible searches and capturing different forms of the word.
+- **🆕 New modification to `threads_rest`**: To prevent potential blocking on certain computers, the default number of cores used by this code is now set to **half of the available cores**, ensuring smoother operation without overloading the system. ***If your computer is lagging significantly, you may want to increase this number to help resolve the issue.***
+## 🛠️ What's New in Version 5.6.1
+- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
+
+## ✨ What's New in Version 5.6
+- **🆕 New argument `lang_OCR_tesseract`**: Add the ability to specify the language of the Tesseract OCR model for extracting text from images.
+
+## 🛠️ What's New in Version 5.5.9
+- **🔧 Bug Fix with `poppler_path`**: Solves the issue with "Unable to get page count. Is poppler installed and in PATH?" by allowing you to specify the Poppler installation path.
+
+## ✨ What's New in Version 5.5.8
+- **🆕 New argument `use_tesseract`**: Adds an option to use Tesseract OCR for extracting text from images within documents. When set to `False`, only text is processed without OCR.
+
+## 🛠️ What's New in Version 5.5.7
+- **🔧 Bug Fix**: Minor bug fixes to enhance stability.
+
+## 🛠️ What's New in Version 5.5.6
+- **🔧 Bug Fix**: Resolved the `tesseract` not found issue.
+- **🔄 Update**: All log messages are now standardized in English.
+
+## 🛠️ What's New in Version 5.5.5
+- **🔧 Bug Fix**: Corrected an issue with calculating contingency tables of keyword frequency when `fusion_keyword_before_after = True`.
+
+## 🛠️ What's New in Version 5.5.4
+- **🔧 Bug fix**: Fixed an issue where some document names couldn't be read correctly.
+- **🆕 New argument `fusion_keyword_before_after`**: Introduces the ability to merge phrases to avoid redundancy in the results.
+
+## 🌍 What's New in Version 5.5.2
+- **🌐 Multilingual Support**: This version now includes support for multiple languages by integrating SpaCy's NLP models. You can now search for keywords and extract sentences in languages such as English, French, German, Spanish, and more. The supported models are listed in the [SpaCy documentation](https://spacy.io/usage/models).
+
