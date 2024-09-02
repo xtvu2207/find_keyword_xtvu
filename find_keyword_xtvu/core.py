@@ -40,9 +40,12 @@ tempfile = install_and_import('tempfile')
 collections = install_and_import('collections')
 scipy = install_and_import("scipy")
 json = install_and_import("json")
-multiprocessing = install_and_import("multiprocessing")
+#multiprocessing = install_and_import("multiprocessing")
+filelock = install_and_import("filelock")
 shutil = install_and_import("shutil")
 
+
+from filelock import FileLock
 from multiprocessing import Lock
 from scipy.spatial.distance import cosine
 from collections import defaultdict
@@ -54,8 +57,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 Event = threading.Event
 Image = PIL.Image
-
-
 
 
 def init_nlp(language_prefix):
@@ -115,8 +116,7 @@ def init_nlp(language_prefix):
 
 
 
-json_lock = Lock()
-
+#json_lock = Lock()
 
 def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page, max_retries=3):
     RED = '\033[91m'
@@ -128,8 +128,9 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
         'Text': texte_page 
     }
 
-    for attempt in range(max_retries):
-        with json_lock:
+    lock_path = cache_file_path + '.lock'
+    with FileLock(lock_path):
+        for attempt in range(max_retries):
             try:
                 if os.path.exists(cache_file_path):
                     with open(cache_file_path, 'r', encoding='utf-8') as f:
@@ -141,12 +142,15 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
                 if key not in data:
                     data[key] = []
 
-                if num_page not in [entry['Page_Number'] for entry in data[key]]:
+                page_found = False
+                for entry in data[key]:
+                    if entry['Page_Number'] == num_page:
+                        entry['Text'] = texte_page
+                        page_found = True
+                        break
+                
+                if not page_found:
                     data[key].append(document_info)
-                else:
-                    for entry in data[key]:
-                        if entry['Page_Number'] == num_page:
-                            entry['Text'] = texte_page
 
                 with tempfile.NamedTemporaryFile('w', delete=False, dir=os.path.dirname(cache_file_path), encoding='utf-8') as temp_file:
                     json.dump(data, temp_file, ensure_ascii=False, indent=4)
@@ -169,8 +173,6 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
                     logging.info("Retrying...")
                 else:
                     logging.error(f"{RED}Failed to save page {num_page} of file {fichier} after {max_retries} attempts{RESET}.")
-                if os.path.exists(temp_file_path):
-                    os.remove(temp_file_path)
 
 def compter_occurrences_mot_cle(phrase, mots_cles, nlp, exact_match):
     total_occurrences = 0
@@ -745,61 +747,65 @@ def find_keyword_xtvu(
                 continue
             
             pdf_files.append((chemin_pdf, id_dossier, fichier))
-    
-    with ProcessPoolExecutor(max_workers=max_threads) as executor:
-        futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,lang_OCR_tesseract,
-                                   exact_match,use_full_tesseract, cache_file_path): pdf_file for pdf_file in pdf_files}
-        for future in as_completed(futures):
-            pdf_file = futures[future]
-            try:
-                file_data, issue = future.result()
-                if file_data:
-                    data.extend(file_data)
-                if issue:
-                    heavy_or_slow_files.append(issue)
-            except Exception as e:
-                chemin_pdf, id_dossier, fichier = pdf_file
-                logging.error(f"{RED}Error processing file {fichier}: {str(e)}{RESET}")
-                heavy_or_slow_files.append({'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)})
+    try:
+        with ProcessPoolExecutor(max_workers=max_threads) as executor:
+            futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,lang_OCR_tesseract,
+                                    exact_match,use_full_tesseract, cache_file_path): pdf_file for pdf_file in pdf_files}
+            for future in as_completed(futures):
+                pdf_file = futures[future]
+                try:
+                    file_data, issue = future.result()
+                    if file_data:
+                        data.extend(file_data)
+                    if issue:
+                        heavy_or_slow_files.append(issue)
+                except Exception as e:
+                    chemin_pdf, id_dossier, fichier = pdf_file
+                    logging.error(f"{RED}Error processing file {fichier}: {str(e)}{RESET}")
+                    heavy_or_slow_files.append({'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': str(e)})
 
-    data.sort(key=lambda x: (x['PDF_Document'], x['Page_Number']))
+        data.sort(key=lambda x: (x['PDF_Document'], x['Page_Number']))
 
-    resultat_path = output_path or os.path.join(os.path.expanduser("~"), "Desktop", "resultat")
-    os.makedirs(resultat_path, exist_ok=True)
+        resultat_path = output_path or os.path.join(os.path.expanduser("~"), "Desktop", "resultat")
+        os.makedirs(resultat_path, exist_ok=True)
 
-    if data:
-        tables_contingence = generer_tables_contingence(data, nlp,fusion_keyword_before_after=fusion_keyword_before_after,exact_match=exact_match)
-        enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
-    else:
-        logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords :-){RESET}")
-        sys.exit(1)
+        if data:
+            tables_contingence = generer_tables_contingence(data, nlp,fusion_keyword_before_after=fusion_keyword_before_after,exact_match=exact_match)
+            enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
+        else:
+            logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords :-){RESET}")
+            sys.exit(1)
+            
+
+
+        columns = ['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Occurrences_Of_Keyword_In_Phrases', 'Info']
+
+        if fusion_keyword_before_after:
+            for keyword_group in keywords:
+                if isinstance(keyword_group, list):
+                    columns.extend(keyword_group)
+                else:
+                    columns.append(keyword_group)
+
+        df = pd.DataFrame(data, columns=columns)
+        df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['PDF_Folder', 'PDF_Document', 'Issue'])
+
+        df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
         
+        if not result_keyword_table_name:
+            logging.warning(f"{YELLOW}No result table name provided, the table name has been set to 'res' by default{RESET}")
+            result_keyword_table_name = "res"
 
+        df_path = os.path.join(resultat_path, f"{result_keyword_table_name}.xlsx")
+        heavy_or_slow_df_path = os.path.join(resultat_path, "heavy_or_slow_df.xlsx")
+        df.to_excel(df_path, index=False)
+        df_heavy_or_slow.to_excel(heavy_or_slow_df_path, index=False)
 
-    columns = ['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Occurrences_Of_Keyword_In_Phrases', 'Info']
-
-    if fusion_keyword_before_after:
-        for keyword_group in keywords:
-            if isinstance(keyword_group, list):
-                columns.extend(keyword_group)
-            else:
-                columns.append(keyword_group)
-
-    df = pd.DataFrame(data, columns=columns)
-    df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['PDF_Folder', 'PDF_Document', 'Issue'])
-
-    df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
-    
-    if not result_keyword_table_name:
-        logging.warning(f"{YELLOW}No result table name provided, the table name has been set to 'res' by default{RESET}")
-        result_keyword_table_name = "res"
-
-    df_path = os.path.join(resultat_path, f"{result_keyword_table_name}.xlsx")
-    heavy_or_slow_df_path = os.path.join(resultat_path, "heavy_or_slow_df.xlsx")
-    df.to_excel(df_path, index=False)
-    df_heavy_or_slow.to_excel(heavy_or_slow_df_path, index=False)
-
-    logging.info(f"{GREEN}The results have been saved in {resultat_path}{RESET}")
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    logging.info(f"The script took {elapsed_time:.2f} seconds to execute.")
+        logging.info(f"{GREEN}The results have been saved in {resultat_path}{RESET}")
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        logging.info(f"The script took {elapsed_time:.2f} seconds to execute.")
+    finally:
+        lock_path = cache_file_path + '.lock'
+        if os.path.exists(lock_path):
+            os.remove(lock_path)
