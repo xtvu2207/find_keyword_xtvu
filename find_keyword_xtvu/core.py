@@ -42,6 +42,7 @@ scipy = install_and_import("scipy")
 json = install_and_import("json")
 multiprocessing = install_and_import("multiprocessing")
 
+
 from multiprocessing import Lock
 from scipy.spatial.distance import cosine
 from collections import defaultdict
@@ -117,7 +118,9 @@ def init_nlp(language_prefix):
 json_lock = Lock()
 
 
-def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page):
+def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page, max_retries=3):
+    RED = '\033[91m'
+    RESET = '\033[0m'
     document_info = {
         'PDF_Folder': id_dossier,
         'PDF_Document': fichier,
@@ -125,34 +128,47 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
         'Text': texte_page 
     }
 
-    with json_lock:
- 
-        if os.path.exists(cache_file_path):
-            with open(cache_file_path, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        else:
-            data = {}
+    for attempt in range(max_retries):
+        with json_lock:
+            try:
+                if os.path.exists(cache_file_path):
+                    with open(cache_file_path, 'r', encoding='utf-8') as f:
+                        data = json.load(f)
+                else:
+                    data = {}
 
-        key = f"{id_dossier}_{fichier}"
-        if key not in data:
-            data[key] = []
+                key = f"{id_dossier}_{fichier}"
+                if key not in data:
+                    data[key] = []
 
- 
-        if num_page not in [entry['Page_Number'] for entry in data[key]]:
-            data[key].append(document_info)
-        else:
-            for entry in data[key]:
-                if entry['Page_Number'] == num_page:
-                    entry['Text'] = texte_page
+                if num_page not in [entry['Page_Number'] for entry in data[key]]:
+                    data[key].append(document_info)
+                else:
+                    for entry in data[key]:
+                        if entry['Page_Number'] == num_page:
+                            entry['Text'] = texte_page
 
- 
-        with tempfile.NamedTemporaryFile('w', delete=False, dir=os.path.dirname(cache_file_path), encoding='utf-8') as temp_file:
-            json.dump(data, temp_file, ensure_ascii=False, indent=4)
-            temp_file_path = temp_file.name
+                with tempfile.NamedTemporaryFile('w', delete=False, dir=os.path.dirname(cache_file_path), encoding='utf-8') as temp_file:
+                    json.dump(data, temp_file, ensure_ascii=False, indent=4)
+                    temp_file_path = temp_file.name
 
- 
-        os.replace(temp_file_path, cache_file_path)
+                os.replace(temp_file_path, cache_file_path)
 
+                with open(cache_file_path, 'r', encoding='utf-8') as f:
+                    validated_data = json.load(f)
+
+                if key in validated_data and any(entry['Page_Number'] == num_page for entry in validated_data[key]):
+                    logging.info(f"Page {num_page} of file {fichier} in folder {id_dossier} successfully saved to cache.")
+                    break
+                else:
+                    logging.warning(f"Validation failed for page {num_page} of file {fichier}. Retrying...")
+
+            except Exception as e:
+                logging.error(f"Error during attempt {attempt + 1} to save page {num_page} of file {fichier}: {str(e)}")
+                if attempt < max_retries - 1:
+                    logging.info("Retrying...")
+                else:
+                    logging.error(f"{RED}Failed to save page {num_page} of file {fichier} after {max_retries} attempts{RESET}.")
 
 def compter_occurrences_mot_cle(phrase, mots_cles, nlp, exact_match):
     total_occurrences = 0
