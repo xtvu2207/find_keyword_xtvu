@@ -41,7 +41,7 @@ collections = install_and_import('collections')
 scipy = install_and_import("scipy")
 json = install_and_import("json")
 multiprocessing = install_and_import("multiprocessing")
-
+shutil = install_and_import("shutil")
 
 from multiprocessing import Lock
 from scipy.spatial.distance import cosine
@@ -152,7 +152,7 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
                     json.dump(data, temp_file, ensure_ascii=False, indent=4)
                     temp_file_path = temp_file.name
 
-                os.replace(temp_file_path, cache_file_path)
+                shutil.move(temp_file_path, cache_file_path)
 
                 with open(cache_file_path, 'r', encoding='utf-8') as f:
                     validated_data = json.load(f)
@@ -169,6 +169,8 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
                     logging.info("Retrying...")
                 else:
                     logging.error(f"{RED}Failed to save page {num_page} of file {fichier} after {max_retries} attempts{RESET}.")
+                if os.path.exists(temp_file_path):
+                    os.remove(temp_file_path)
 
 def compter_occurrences_mot_cle(phrase, mots_cles, nlp, exact_match):
     total_occurrences = 0
