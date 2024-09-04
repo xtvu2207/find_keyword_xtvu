@@ -18,6 +18,9 @@
     - [Utilisation](#utilisation)
     - [Arguments](#arguments-1)
     - [Sorties](#sorties)
+    - [Contribution](#contribution-1)
+    - [License](#license-1)
+
 - [📜 Older Updates](#-older-updates)
 
 # 🔥 Recent Updates

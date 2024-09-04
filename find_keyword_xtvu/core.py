@@ -48,11 +48,11 @@ shutil = install_and_import("shutil")
 from filelock import FileLock
 from scipy.spatial.distance import cosine
 from collections import defaultdict
-from docx import Document
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import inch
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
+from docx import Document # type: ignore
+from reportlab.lib.pagesizes import A4 # type: ignore
+from reportlab.lib.units import inch # type: ignore
+from reportlab.lib.styles import getSampleStyleSheet# type: ignore
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer# type: ignore
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 Event = threading.Event
 Image = PIL.Image

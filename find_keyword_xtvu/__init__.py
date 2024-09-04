@@ -39,6 +39,6 @@ def check_and_update_library(library_name):
 library_name = 'find_keyword_xtvu'
 check_and_update_library(library_name)
 
-from .core import find_keyword_xtvu
+from .core import find_keyword_xtvu # type: ignore
 
 __all__ = ["find_keyword_xtvu"]
