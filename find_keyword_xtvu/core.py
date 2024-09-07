@@ -43,7 +43,7 @@ json = install_and_import("json")
 #multiprocessing = install_and_import("multiprocessing")
 filelock = install_and_import("filelock")
 shutil = install_and_import("shutil")
-
+gc = install_and_import("gc")
 
 from filelock import FileLock
 from scipy.spatial.distance import cosine
@@ -113,6 +113,42 @@ def init_nlp(language_prefix):
             logging.error(f"{RED}Unable to load a language model for '{language_prefix}' and the fallback model '{fallback_model}'.{RESET}")
             sys.exit(1)
 
+
+
+def check_tesseract_requirements(tesseract_cmd, lang_OCR_tesseract, full_check=False):
+    RED = '\033[91m'
+    RESET = '\033[0m'
+    YELLOW = '\033[93m'
+
+    if not tesseract_cmd:
+        logging.error(f"{RED}You chose to use pytesseract, but you didn't provide a Tesseract path. Please provide a valid Tesseract path or set use_tesseract to False if you don't want to use Tesseract.{RESET}")
+        sys.exit(1)
+
+    try:
+        result = subprocess.run([tesseract_cmd, '--list-langs'], stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        available_languages = result.stdout.splitlines()
+
+        if lang_OCR_tesseract not in available_languages:
+            if full_check:
+                if not lang_OCR_tesseract:
+                    logging.error(f"{RED}Full Tesseract requires a specific language for OCR, but no language was provided. Please provide a valid language code or set use_full_tesseract to False.{RESET}")
+                    sys.exit(1)
+                else:
+                    logging.error(f"{RED}Tesseract is missing the required language '{lang_OCR_tesseract}'. You cannot use full Tesseract for text extraction. Please install the necessary language files or set use_full_tesseract to False.{RESET}")
+                    sys.exit(1)
+            else:
+                logging.warning(f"{YELLOW}Tesseract does not have the language '{lang_OCR_tesseract}' installed. Some OCR functionality may not work as expected.{RESET}")
+                return False
+
+        return True
+
+    except subprocess.CalledProcessError as e:
+        logging.error(f"{RED}Error while checking Tesseract languages: {str(e)}{RESET}")
+        sys.exit(1)
+
+    except Exception as e:
+        logging.error(f"{RED}Error with Tesseract setup: {str(e)}{RESET}")
+        sys.exit(1)
 
 
 #json_lock = Lock()
@@ -530,7 +566,8 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
                         except Exception as e:
                             logging.error(f"{RED}Timeout or error processing page {num_page + 1} of file {fichier}: {str(e)}{RESET}")
                             pages_problematiques.append(num_page + 1)
-
+                    gc.collect()
+                pdf.close()
                 if cache_file_path:
                     for num_page, texte_page in texte_complet_document:
                         sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page)
@@ -544,6 +581,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
         return data, {'PDF_Folder': id_dossier, 'PDF_Document': fichier, 'Issue': issue_description}
 
     data.sort(key=lambda x: x['Page_Number'])
+    gc.collect()
     return data, None
 
 
@@ -680,6 +718,11 @@ def find_keyword_xtvu(
     input_path = input_path.replace("\\", "/")
     output_path = output_path.replace("\\", "/")
 
+    if use_tesseract:
+        if not check_tesseract_requirements(tesseract_cmd, lang_OCR_tesseract, full_check=use_full_tesseract):
+            if not use_full_tesseract:
+                logging.warning(f"{YELLOW}Tesseract might not work correctly without all required files.{RESET}")
+
     if not keywords:
         logging.error(f"{RED}The keyword list (KEYWORDS) cannot be empty. Please provide a valid list.{RESET}")
         sys.exit(1)
@@ -688,9 +731,6 @@ def find_keyword_xtvu(
         sys.exit(1)
     if not input_path or not os.path.isdir(input_path):
         logging.error(f"{RED}The input directory path (input_path) is invalid or not defined.{RESET}")
-        sys.exit(1)
-    if use_tesseract and not tesseract_cmd:
-        logging.error(f"{RED}You chose to use pytesseract, but you didn't provide a Tesseract path. Please provide a Tesseract path or set use_tesseract to False if you don't want to use pytesseract.{RESET}")
         sys.exit(1)
     if not cache_file_path:
         logging.warning(f"{YELLOW}No path provided for the cache file. Text documents will not be saved for future use.{RESET}")
