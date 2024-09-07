@@ -3,11 +3,11 @@
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
 # 🔥 Recent Updates
-### ✨ What's New in Version 5.8
+## ✨ What's New in Version 5.8
 - **❗ Important Modification in Cache File Generation Using `cache_folder_path` argument**: This update improves the handling of large document collections by changing the principle of cache file generation. Unlike version **5.7**, where a single JSON cache file was used for all documents, the function now creates individual cache files for each subfolder. This enhances performance and organization, especially when dealing with large quantities of documents.
-### ✨ What's New in Version 5.7
+## ✨ What's New in Version 5.7
 - **🆕 Enhanced PDF Processing with the new `cache_file_path` argument**: This update introduces a powerful feature that optimizes document processing through JSON-based caching. When a `cache_file_path` is provided, the function first checks whether the extracted text data for the file is already stored in the JSON cache. If the data is found, the function skips the extraction process, significantly speeding up the analysis. If not, the function will proceed with the extraction, save the resulting data to the JSON cache, and ensure that future analyses of the same file are much faster.
-### ✨ What's New in Version 5.6.9
+## ✨ What's New in Version 5.6.9
 - **🆕 Enhanced Keyword Frequency Tracking**: In this update, I have introduced additional columns to the results DataFrame when the `fusion_keyword_before_after` argument is set to `True`. These columns represent the frequency of each keyword found in the analyzed phrases, offering more detailed insights into keyword occurrences. These new frequency columns are automatically appended after the `Info` column.
 
 
@@ -94,7 +94,6 @@ if __name__ == "__main__":
 - `lang_OCR_tesseract`: Language code used by Tesseract OCR to identify the language of the text to be extracted from images. You can specify other language codes supported by Tesseract depending on the language of the text in the images. For a complete list of supported languages and their codes, you can consult the [official Tesseract documentation](https://github.com/tesseract-ocr/tesseract/blob/main/doc/tesseract.1.asc#languages). (default value: `fra`)
 - `input_path`: Path to the folder containing the files to be processed.
 - `output_path`: Path to the folder where the results will be saved.
-- `cache_folder_path`: Path to the location where the JSON file will be created to store the cache of processed documents. This cache file significantly reduces the processing time when the same document is processed multiple times in future runs. If this parameter is not provided or if the path is invalid, the function will not save any cache, and the processing time will be longer as it will need to reprocess the document each time.
 - `cache_folder_path`: Path to the folder containing the JSON cache files that will be created for each subfolder. This directory will store the cache files for processed documents, significantly reducing processing time when the same documents are processed multiple times in future runs. If this parameter is not provided or if the path is invalid, the function will not save any cache, and the processing time will be longer.
 ## Outputs
 
@@ -226,6 +225,11 @@ Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 
 # 📜 Older Updates
+
+## ✨ What's New in Version 5.6.8
+- **❗Important Change to Argument**: To simplify the requirements of this library, I have decided to remove the dependency on Poppler. Now, you don’t need to download Poppler to use this library. This change simplifies the process for the average user.
+- **🆕 New Argument `use_full_tesseract`**: This new argument allows you to decide whether to apply Tesseract to the entire document. This option enables us to extract text while maintaining the structure of the text, which is beneficial for users with high-performance computers.
+
 
 ## ✨ What's New in Version 5.6.7
 - **🔧 Bug Fix**: Fixed the error in generating contingency tables and calculating occurrences of keywords in a sentence.
