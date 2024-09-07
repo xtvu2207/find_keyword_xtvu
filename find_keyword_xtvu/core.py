@@ -151,24 +151,24 @@ def check_tesseract_requirements(tesseract_cmd, lang_OCR_tesseract, full_check=F
         sys.exit(1)
 
 
-#json_lock = Lock()
 
-def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page, max_retries=3):
-    RED = '\033[91m'
-    RESET = '\033[0m'
+def sauvegarder_informations_et_textes_global(cache_folder_path, id_dossier, fichier, num_page, texte_page, max_retries=3):
     document_info = {
         'PDF_Folder': id_dossier,
         'PDF_Document': fichier,
         'Page_Number': num_page,
-        'Text': texte_page 
+        'Text': texte_page
     }
 
-    lock_path = cache_file_path + '.lock'
+    cache_folder_path = os.path.join(cache_folder_path, f"cache_{id_dossier}.json")
+    
+    lock_path = cache_folder_path + '.lock'
+    
     with FileLock(lock_path):
         for attempt in range(max_retries):
             try:
-                if os.path.exists(cache_file_path):
-                    with open(cache_file_path, 'r', encoding='utf-8') as f:
+                if os.path.exists(cache_folder_path):
+                    with open(cache_folder_path, 'r', encoding='utf-8') as f:
                         data = json.load(f)
                 else:
                     data = {}
@@ -187,13 +187,13 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
                 if not page_found:
                     data[key].append(document_info)
 
-                with tempfile.NamedTemporaryFile('w', delete=False, dir=os.path.dirname(cache_file_path), encoding='utf-8') as temp_file:
+                with tempfile.NamedTemporaryFile('w', delete=False, dir=os.path.dirname(cache_folder_path), encoding='utf-8') as temp_file:
                     json.dump(data, temp_file, ensure_ascii=False, indent=4)
                     temp_file_path = temp_file.name
 
-                shutil.move(temp_file_path, cache_file_path)
+                shutil.move(temp_file_path, cache_folder_path)
 
-                with open(cache_file_path, 'r', encoding='utf-8') as f:
+                with open(cache_folder_path, 'r', encoding='utf-8') as f:
                     validated_data = json.load(f)
 
                 if key in validated_data and any(entry['Page_Number'] == num_page for entry in validated_data[key]):
@@ -207,7 +207,8 @@ def sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichi
                 if attempt < max_retries - 1:
                     logging.info("Retrying...")
                 else:
-                    logging.error(f"{RED}Failed to save page {num_page} of file {fichier} after {max_retries} attempts{RESET}.")
+                    logging.error(f"Failed to save page {num_page} of file {fichier} after {max_retries} attempts.")
+
 
 def compter_occurrences_mot_cle(phrase, mots_cles, nlp, exact_match):
     total_occurrences = 0
@@ -491,7 +492,7 @@ def traiter_page_from_text(texte_complet, id_dossier, fichier, num_page, keyword
     return data, pages_problematiques
 
 
-def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, lang_OCR_tesseract, exact_match, use_full_tesseract, cache_file_path):
+def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract, lang_OCR_tesseract, exact_match, use_full_tesseract, cache_folder_path):
     RED = '\033[91m'
     RESET = '\033[0m'
 
@@ -510,6 +511,9 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     pages_problematiques = []
 
     texte_complet_document = []
+ 
+    cache_file_path = os.path.join(cache_folder_path, f"cache_{id_dossier}.json")
+    
 
     if not cache_file_path:
         texte_sauvegarde = {}
@@ -568,9 +572,10 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
                             pages_problematiques.append(num_page + 1)
                     gc.collect()
                 pdf.close()
+ 
                 if cache_file_path:
                     for num_page, texte_page in texte_complet_document:
-                        sauvegarder_informations_et_textes_global(cache_file_path, id_dossier, fichier, num_page, texte_page)
+                        sauvegarder_informations_et_textes_global(cache_folder_path, id_dossier, fichier, num_page, texte_page)
 
         except Exception as e:
             logging.error(f"{RED}Error opening file {chemin_pdf}: {str(e)}{RESET}")
@@ -583,6 +588,7 @@ def traiter_fichier_pdf(args, timeout, keywords, nb_phrases_avant, nb_phrases_ap
     data.sort(key=lambda x: x['Page_Number'])
     gc.collect()
     return data, None
+
 
 
 
@@ -694,7 +700,7 @@ def find_keyword_xtvu(
     nb_phrases_avant=10,
     nb_phrases_apres=10,
     keywords=None,
-    exact_match = True,
+    exact_match=True,
     taille=20,
     timeout=200,
     result_keyword_table_name="",
@@ -702,12 +708,12 @@ def find_keyword_xtvu(
     fusion_keyword_before_after=False,
     tesseract_cmd="",
     use_tesseract=False,
-    use_full_tesseract = False,
-    lang_OCR_tesseract = "fra",  
+    use_full_tesseract=False,
+    lang_OCR_tesseract="fra",
     input_path="/path/to/input",
     output_path="/path/to/output",
-    poppler_path = "",
-    cache_file_path="/path/to/json_file.json"  
+    poppler_path="",
+    cache_folder_path="/path/to/cache_dir"   
 ):
     RED = '\033[91m'
     GREEN = '\033[92m'
@@ -717,6 +723,7 @@ def find_keyword_xtvu(
     tesseract_cmd = tesseract_cmd.replace("\\", "/")
     input_path = input_path.replace("\\", "/")
     output_path = output_path.replace("\\", "/")
+    cache_folder_path = cache_folder_path.replace("\\", "/")
 
     if use_tesseract:
         if not check_tesseract_requirements(tesseract_cmd, lang_OCR_tesseract, full_check=use_full_tesseract):
@@ -732,24 +739,22 @@ def find_keyword_xtvu(
     if not input_path or not os.path.isdir(input_path):
         logging.error(f"{RED}The input directory path (input_path) is invalid or not defined.{RESET}")
         sys.exit(1)
-    if not cache_file_path:
-        logging.warning(f"{YELLOW}No path provided for the cache file. Text documents will not be saved for future use.{RESET}")
+    if not cache_folder_path:
+        logging.warning(f"{YELLOW}No path provided for the cache directory. Text documents will not be saved for future use.{RESET}")
     else:
-        json_dir = os.path.dirname(cache_file_path)
-        if not os.path.exists(json_dir):
+        if not os.path.exists(cache_folder_path):  
             try:
-                os.makedirs(json_dir)
-                logging.info(f"{GREEN}Directory created for the cache file: {json_dir}{RESET}")
+                os.makedirs(cache_folder_path)   
+                logging.info(f"{GREEN}Directory created for the cache: {cache_folder_path}{RESET}")
             except Exception as e:
-                logging.error(f"{RED}Failed to create directory for cache file: {str(e)}. Text documents will not be saved for future use.{RESET}")
-                cache_file_path = ""  
+                logging.error(f"{RED}Failed to create directory for cache: {str(e)}. Text documents will not be saved for future use.{RESET}")
+                cache_folder_path = ""
 
 
-        
-    if threads_rest == None:        
-        max_threads = os.cpu_count()//2
-    else :
-        max_threads = os.cpu_count()-threads_rest
+    if threads_rest is None:
+        max_threads = os.cpu_count() // 2
+    else:
+        max_threads = os.cpu_count() - threads_rest
     os.environ['NUMEXPR_MAX_THREADS'] = str(max_threads)
     file_size_limit = taille * 1024 * 1024
     nlp = init_nlp(prefixe_langue)
@@ -786,10 +791,27 @@ def find_keyword_xtvu(
                 continue
             
             pdf_files.append((chemin_pdf, id_dossier, fichier))
+
     try:
         with ProcessPoolExecutor(max_workers=max_threads) as executor:
-            futures = {executor.submit(traiter_fichier_pdf, pdf_file, timeout, keywords, nb_phrases_avant, nb_phrases_apres, nlp, fusion_keyword_before_after, tesseract_cmd, use_tesseract,lang_OCR_tesseract,
-                                    exact_match,use_full_tesseract, cache_file_path): pdf_file for pdf_file in pdf_files}
+            futures = {
+                executor.submit(
+                    traiter_fichier_pdf,
+                    pdf_file,
+                    timeout,
+                    keywords,
+                    nb_phrases_avant,
+                    nb_phrases_apres,
+                    nlp,
+                    fusion_keyword_before_after,
+                    tesseract_cmd,
+                    use_tesseract,
+                    lang_OCR_tesseract,
+                    exact_match,
+                    use_full_tesseract,
+                    cache_folder_path  
+                ): pdf_file for pdf_file in pdf_files
+            }
             for future in as_completed(futures):
                 pdf_file = futures[future]
                 try:
@@ -809,13 +831,11 @@ def find_keyword_xtvu(
         os.makedirs(resultat_path, exist_ok=True)
 
         if data:
-            tables_contingence = generer_tables_contingence(data, nlp,fusion_keyword_before_after=fusion_keyword_before_after,exact_match=exact_match)
+            tables_contingence = generer_tables_contingence(data, nlp, fusion_keyword_before_after=fusion_keyword_before_after, exact_match=exact_match)
             enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
         else:
             logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords :-){RESET}")
             sys.exit(1)
-            
-
 
         columns = ['PDF_Folder', 'PDF_Document', 'Page_Number', 'Keywords_Found', 'Occurrences_Of_Keyword_In_Phrases', 'Info']
 
@@ -830,7 +850,7 @@ def find_keyword_xtvu(
         df_heavy_or_slow = pd.DataFrame(heavy_or_slow_files, columns=['PDF_Folder', 'PDF_Document', 'Issue'])
 
         df_heavy_or_slow = df_heavy_or_slow.drop_duplicates()
-        
+
         if not result_keyword_table_name:
             logging.warning(f"{YELLOW}No result table name provided, the table name has been set to 'res' by default{RESET}")
             result_keyword_table_name = "res"
@@ -845,6 +865,6 @@ def find_keyword_xtvu(
         elapsed_time = end_time - start_time
         logging.info(f"The script took {elapsed_time:.2f} seconds to execute.")
     finally:
-        lock_path = cache_file_path + '.lock'
+        lock_path = cache_folder_path + '.lock'
         if os.path.exists(lock_path):
             os.remove(lock_path)
