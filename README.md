@@ -3,7 +3,7 @@
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
 # 🔥 Recent Updates
-## ✨ What's New in Version 5.8
+## ✨ What's New in Version 5.7.2
 - **❗ Important Modification in Cache File Generation Using `cache_folder_path` argument**: This update improves the handling of large document collections by changing the principle of cache file generation. Unlike version **5.7**, where a single JSON cache file was used for all documents, the function now creates individual cache files for each subfolder. This enhances performance and organization, especially when dealing with large quantities of documents.
 ## ✨ What's New in Version 5.7
 - **🆕 Enhanced PDF Processing with the new `cache_file_path` argument**: This update introduces a powerful feature that optimizes document processing through JSON-based caching. When a `cache_file_path` is provided, the function first checks whether the extracted text data for the file is already stored in the JSON cache. If the data is found, the function skips the extraction process, significantly speeding up the analysis. If not, the function will proceed with the extraction, save the resulting data to the JSON cache, and ensure that future analyses of the same file are much faster.
