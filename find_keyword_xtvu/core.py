@@ -694,6 +694,35 @@ def enregistrer_tables_contingence(tables_contingence, output_path, freque_docum
     logging.info(f"{GREEN}Contingency tables have been saved in {excel_path}{RESET}")
 
 
+def enregistrer_tables_contingence_ensemble(tables_contingence, output_path, freque_document_keyword_table_name):
+    YELLOW = '\033[93m'
+    GREEN = '\033[92m'
+    RESET = '\033[0m'
+
+    if not freque_document_keyword_table_name:
+        logging.warning(f"{YELLOW}No contingency table name for document by keyword provided, the table name has been set to 'freque_document_keyword' by default{RESET}")
+        freque_document_keyword_table_name = "freque_document_keyword"
+
+    excel_path = os.path.join(output_path, f"{freque_document_keyword_table_name}.xlsx")
+
+    combined_df = pd.DataFrame()
+
+    for id_dossier, table in tables_contingence.items():
+        table['PDF_Folder'] = id_dossier
+        table.reset_index(inplace=True) 
+        table.rename(columns = {'index': 'Document_Name'}, inplace = True)
+        combined_df = pd.concat([combined_df, table])
+
+    columns = ['PDF_Folder'] + [col for col in combined_df.columns if col != 'PDF_Folder']
+    combined_df = combined_df[columns]
+
+    with pd.ExcelWriter(excel_path) as writer:
+        combined_df.to_excel(writer, sheet_name='Contingency_Tables', index=False)
+    
+    logging.info(f"{GREEN}All contingency tables have been combined and saved in {excel_path}{RESET}")
+
+
+
 def find_keyword_xtvu(
     prefixe_langue='fr',
     threads_rest=None,
@@ -832,7 +861,8 @@ def find_keyword_xtvu(
 
         if data:
             tables_contingence = generer_tables_contingence(data, nlp, fusion_keyword_before_after=fusion_keyword_before_after, exact_match=exact_match)
-            enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
+            enregistrer_tables_contingence_ensemble(tables_contingence, resultat_path, freque_document_keyword_table_name)
+            #enregistrer_tables_contingence(tables_contingence, resultat_path, freque_document_keyword_table_name)
         else:
             logging.error(f"{RED}There are no documents containing the keywords! Please check your keywords :-){RESET}")
             sys.exit(1)
