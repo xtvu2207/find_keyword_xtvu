@@ -3,12 +3,12 @@
 The `find_keyword_xtvu` Python package facilitates the search for keywords across **PDF, DOCX, ODT, and RTF** files, enabling the extraction of sentences that contain these keywords. It also offers support for **multiple languages** and can run on **multicore CPUs**.
 
 # 🔥 Recent Updates
+## ✨ What's New in Version 5.7.3.1
+- Bug fixes
 ## ✨ What's New in Version 5.7.3
 - **❗ Important Modification in the output of the frequency table**: This update changes the way the results in the frequency table are presented. Now, instead of each contingency table from a subfolder being recorded on a separate sheet, all of them will be placed on a single sheet to facilitate the interpretation of the results.
 ## ✨ What's New in Version 5.7.2
 - **❗ Important Modification in Cache File Generation Using `cache_folder_path` argument**: This update improves the handling of large document collections by changing the principle of cache file generation. Unlike version **5.7**, where a single JSON cache file was used for all documents, the function now creates individual cache files for each subfolder. This enhances performance and organization, especially when dealing with large quantities of documents.
-## ✨ What's New in Version 5.7
-- **🆕 Enhanced PDF Processing with the new `cache_file_path` argument**: This update introduces a powerful feature that optimizes document processing through JSON-based caching. When a `cache_file_path` is provided, the function first checks whether the extracted text data for the file is already stored in the JSON cache. If the data is found, the function skips the extraction process, significantly speeding up the analysis. If not, the function will proceed with the extraction, save the resulting data to the JSON cache, and ensure that future analyses of the same file are much faster.
 
 
 ## Installation
@@ -223,7 +223,13 @@ Les contributions sont les bienvenues ! Si vous souhaitez améliorer ce projet o
 Ce projet est sous licence MIT. Voir le fichier `LICENSE` pour plus de détails.
 
 
-# 📜 Older Updates
+# 📜 Older Updates  
+
+
+
+## ✨ What's New in Version 5.7
+- **🆕 Enhanced PDF Processing with the new `cache_file_path` argument**: This update introduces a powerful feature that optimizes document processing through JSON-based caching. When a `cache_file_path` is provided, the function first checks whether the extracted text data for the file is already stored in the JSON cache. If the data is found, the function skips the extraction process, significantly speeding up the analysis. If not, the function will proceed with the extraction, save the resulting data to the JSON cache, and ensure that future analyses of the same file are much faster.
+
 
 ## ✨ What's New in Version 5.6.9
 - **🆕 Enhanced Keyword Frequency Tracking**: In this update, I have introduced additional columns to the results DataFrame when the `fusion_keyword_before_after` argument is set to `True`. These columns represent the frequency of each keyword found in the analyzed phrases, offering more detailed insights into keyword occurrences. These new frequency columns are automatically appended after the `Info` column.
